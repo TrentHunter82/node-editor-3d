@@ -1,0 +1,182 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --coral: #E8453C;
+  --teal: #2EC4B6;
+  --orange: #FF6B35;
+  --chrome: #C0C0C0;
+  --chrome-dark: #707070;
+  --bg: #000000;
+  --panel-bg: rgba(20, 20, 25, 0.85);
+  --panel-bg-solid: #14141A;
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --panel-hover: rgba(30, 30, 38, 0.9);
+  --panel-active: rgba(40, 40, 50, 0.95);
+  --text: #E0E0E0;
+  --text-dim: #888888;
+  --text-faint: rgba(255, 255, 255, 0.5);
+  --divider: rgba(255, 255, 255, 0.06);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.12);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
+  --scene-bg: #000000;
+  --grid-color: rgba(255, 255, 255, 0.04);
+  --btn-bg: rgba(255, 255, 255, 0.06);
+  --btn-border: rgba(255, 255, 255, 0.1);
+  --btn-text: rgba(255, 255, 255, 0.55);
+  --overlay-bg: rgba(0, 0, 0, 0.6);
+  --text-bright: #ffffff;
+  --success: #44DD88;
+  --warning: #FFB800;
+  --danger: #E8453C;
+  --purple: #9B59B6;
+  --gold: #FFD700;
+  --bg-subtle: rgba(255, 255, 255, 0.04);
+  --kbd-bg: rgba(255, 255, 255, 0.08);
+  --shadow: rgba(0, 0, 0, 0.4);
+  --text-primary: #ffffff;
+  --btn-hover: rgba(255, 255, 255, 0.1);
+  --font-display: 'Archivo Black', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Layout — bar heights */
+  --bar-execute-h: 24px;
+  --bar-tab-h: 32px;
+  --bar-breadcrumb-h: 20px;
+  --bar-status-h: 28px;
+
+  /* Layout — computed offsets (sum of bars above) */
+  --bar-tab-top: var(--bar-execute-h);                                         /* 24px */
+  --bar-breadcrumb-top: calc(var(--bar-execute-h) + var(--bar-tab-h));         /* 56px */
+  --toolbar-top: calc(var(--bar-execute-h) + var(--bar-tab-h) + var(--bar-breadcrumb-h)); /* 76px */
+
+  /* Layout — panel dimensions */
+  --inspector-w: 260px;
+  --inspector-top: calc(var(--toolbar-top) + 42px);  /* toolbar-top + toolbar gap */
+  --panel-inset: 20px;
+  --minimap-bottom: 40px;
+  --panel-toggle-bottom: 32px;
+
+  /* Font scale */
+  --font-2xs: 8px;
+  --font-xs: 9px;
+  --font-sm: 10px;
+  --font-base: 11px;
+  --font-md: 12px;
+  --font-lg: 13px;
+  --font-xl: 14px;
+  --font-2xl: 16px;
+
+  /* Spacing scale */
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 12px;
+  --space-6: 16px;
+  --space-7: 20px;
+  --space-8: 24px;
+  --space-9: 32px;
+
+  /* Animation durations */
+  --anim-fast: 100ms;
+  --anim-normal: 150ms;
+  --anim-slow: 250ms;
+
+  /* Border radius scale */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+}
+
+[data-theme="light"] {
+  --bg: #E8E8EC;
+  --panel-bg: rgba(245, 245, 248, 0.92);
+  --panel-bg-solid: #F5F5F8;
+  --panel-border: rgba(0, 0, 0, 0.1);
+  --panel-hover: rgba(235, 235, 240, 0.95);
+  --panel-active: rgba(225, 225, 232, 0.98);
+  --text: #1A1A2E;
+  --text-dim: #666680;
+  --text-faint: rgba(0, 0, 0, 0.4);
+  --divider: rgba(0, 0, 0, 0.08);
+  --scrollbar-thumb: rgba(0, 0, 0, 0.15);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.25);
+  --scene-bg: #D0D0D8;
+  --grid-color: rgba(0, 0, 0, 0.06);
+  --btn-bg: rgba(0, 0, 0, 0.05);
+  --btn-border: rgba(0, 0, 0, 0.12);
+  --btn-text: rgba(0, 0, 0, 0.45);
+  --overlay-bg: rgba(0, 0, 0, 0.3);
+  --bg-subtle: rgba(0, 0, 0, 0.04);
+  --kbd-bg: rgba(0, 0, 0, 0.08);
+  --shadow: rgba(0, 0, 0, 0.15);
+  --text-bright: #1A1A2E;
+  --success: #1A8A50;
+  --warning: #B8860B;
+  --danger: #D03830;
+  --teal: #1A9E92;
+  --coral: #D03830;
+  --orange: #E05820;
+  --purple: #7B3FA0;
+  --gold: #B8860B;
+  --text-primary: #1A1A2E;
+  --btn-hover: rgba(0, 0, 0, 0.08);
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+
+/* Responsive: tablet */
+@media (max-width: 1024px) {
+  :root {
+    --inspector-w: 220px;
+    --panel-inset: 12px;
+  }
+}
+
+/* Responsive: compact */
+@media (max-width: 768px) {
+  :root {
+    --inspector-w: 0px;
+    --panel-inset: 8px;
+    --bar-tab-h: 28px;
+    --bar-breadcrumb-h: 0px;
+  }
+}
+
+/* Responsive: mobile (≤480px) */
+@media (max-width: 480px) {
+  :root {
+    --panel-inset: 4px;
+    --bar-execute-h: 20px;
+    --bar-tab-h: 24px;
+    --bar-status-h: 24px;
+  }
+}
+
+/* drei <Html> outer wrapper: the style prop only reaches an inner div,
+   so we need a class on the outer wrapper to block pointer events. */
+.html-no-events {
+  pointer-events: none !important;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes storage-toast-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
