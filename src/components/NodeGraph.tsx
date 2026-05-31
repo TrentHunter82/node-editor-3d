@@ -29,7 +29,6 @@ export function NodeGraph() {
   const { startDrag, onDrag, endDrag, isDragging } = useNodeDrag();
   // cullingEpoch triggers re-renders when node visibility changes,
   // keeping React in sync with the useFrame LOD updates.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { getLOD: getRawLOD, cullingEpoch: _cullingEpoch } = useViewportCulling(nodes);
 
   // In overview mode, force all visible nodes to 'lod' (no full detail, no culling)

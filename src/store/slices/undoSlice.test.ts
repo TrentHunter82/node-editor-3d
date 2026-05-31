@@ -370,14 +370,14 @@ describe('createUndoActions', () => {
   let cancelCalled: number;
   let syncNextIdCalled: number;
   let clearTimeoutsCalled: number;
-  let clearTransientCalled: number;
+  let _clearTransientCalled: number;
 
   beforeEach(() => {
     _resetUndoModuleState('default');
     cancelCalled = 0;
     syncNextIdCalled = 0;
     clearTimeoutsCalled = 0;
-    clearTransientCalled = 0;
+    _clearTransientCalled = 0;
 
     state = {
       ...makeState(),
@@ -394,7 +394,7 @@ describe('createUndoActions', () => {
       cancelAutoExecute: () => { cancelCalled++; },
       syncNextId: () => { syncNextIdCalled++; },
       clearExecutionTimeoutsAndCache: () => { clearTimeoutsCalled++; },
-      clearAllTransientState: () => { clearTransientCalled++; },
+      clearAllTransientState: () => { _clearTransientCalled++; },
     });
   });
 

@@ -19,6 +19,15 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Honor the `_` prefix for intentionally-unused vars/args/catch bindings,
+      // matching TypeScript's noUnusedLocals/noUnusedParameters behavior.
+      '@typescript-eslint/no-unused-vars': ['error', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+      }],
+    },
   },
   {
     // Test files use `any` freely for mocks/fixtures — don't treat that as an error.
