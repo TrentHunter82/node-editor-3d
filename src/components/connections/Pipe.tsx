@@ -1,6 +1,7 @@
 import { useMemo, useCallback, useEffect, useRef, useState, memo } from 'react';
 import { CubicBezierLine, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import type { Line2 } from 'three-stdlib';
 import { useFrame } from '@react-three/fiber';
 import { useEditorStore } from '../../store/editorStore';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -134,7 +135,7 @@ export const Pipe = memo(function Pipe({ connection, isTraced, getConnectionLOD 
     : FLOW_COLORS.running;
   // Determine flow speed: fast while running, decelerating when complete
   const flowSpeed = sourceExecState === 'running' ? 0.25 : 0.08;
-  const flowLineRef = useRef<any>(null);
+  const flowLineRef = useRef<Line2 | null>(null);
   const pulseRef = useRef<THREE.Mesh>(null);
   // Trail particles (follow behind main pulse)
   const trail1Ref = useRef<THREE.Mesh>(null);
@@ -150,7 +151,7 @@ export const Pipe = memo(function Pipe({ connection, isTraced, getConnectionLOD 
 
   // Disable raycasting on the CubicBezierLine's Line2 object
   // so it doesn't intercept events meant for the hit mesh
-  const lineRef = useRef<any>(null);
+  const lineRef = useRef<Line2 | null>(null);
   useEffect(() => {
     if (lineRef.current) {
       lineRef.current.raycast = NO_RAYCAST;
@@ -158,7 +159,7 @@ export const Pipe = memo(function Pipe({ connection, isTraced, getConnectionLOD 
   }, []);
 
   // Ref callback to disable raycasting on the flow animation overlay line immediately on mount
-  const flowLineRefCallback = useCallback((obj: any) => {
+  const flowLineRefCallback = useCallback((obj: Line2 | null) => {
     flowLineRef.current = obj;
     if (obj) obj.raycast = NO_RAYCAST;
   }, []);
@@ -455,8 +456,7 @@ export const Pipe = memo(function Pipe({ connection, isTraced, getConnectionLOD 
           midA={midA}
           midB={midB}
           color={isSelected ? '#ffffff' : isTraced ? '#2EC4B6' : '#e8e8ff'}
-          lineWidth={(lineWidth + 4) as any}
-          segments={20 as any}
+          lineWidth={lineWidth + 4}
           transparent
           opacity={0.15}
         />
@@ -470,7 +470,6 @@ export const Pipe = memo(function Pipe({ connection, isTraced, getConnectionLOD 
         midB={midB}
         color={lineColor}
         lineWidth={lineWidth}
-        segments={20 as any}
       />
       {/* Flow animation overlay: animated dashes during execution */}
       {showFlow && (
@@ -481,8 +480,7 @@ export const Pipe = memo(function Pipe({ connection, isTraced, getConnectionLOD 
           midA={midA}
           midB={midB}
           color={flowColor}
-          lineWidth={2 as any}
-          segments={20 as any}
+          lineWidth={2}
           transparent
           opacity={sourceExecState === 'error' ? 0.8 : sourceExecState === 'complete' ? 0.4 : 0.7}
           dashed

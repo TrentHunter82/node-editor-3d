@@ -200,7 +200,12 @@ export const PendingPipe = memo(function PendingPipe() {
         midB={midB}
         color={effectiveWireColor}
         lineWidth={3}
-        segments={32 as any}
+        // drei's CubicBezierLineProps types `segments` as `boolean & number`
+        // (an upstream Omit bug merging Line's boolean `segments` with the
+        // curve-sample count), so a plain number won't typecheck. 32 = smoother
+        // curve resolution for the live-dragged wire.
+        // @ts-expect-error -- segments is a number at runtime (drei type bug)
+        segments={32}
         transparent
         opacity={effectiveOpacity}
       />
