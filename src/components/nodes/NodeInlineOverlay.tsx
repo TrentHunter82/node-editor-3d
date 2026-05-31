@@ -3,7 +3,7 @@ import { Html } from '@react-three/drei';
 import { NODE_TYPE_CONFIG } from '../../types';
 import type { EditorNode } from '../../types';
 import { useEditorStore } from '../../store/editorStore';
-import { ACCENT_HEX, pushUndoOnFocus, setDataDirect } from './NodeScreen';
+import { ACCENT_HEX, pushUndoOnFocus, setDataDirect } from './nodeScreenHelpers';
 import { formatCompact } from '../../utils/valueFormat';
 
 /** Which data fields to show inline per node type */

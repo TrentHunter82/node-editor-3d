@@ -16,11 +16,8 @@
 import { describe, it, expect } from 'vitest';
 import { PORT_TYPE_COLORS } from '../types';
 import type { PortType } from '../types';
-import {
-  ACCENT_HEX,
-  hexToRgba,
-  NODE_SCREEN_FIELDS,
-} from '../components/nodes/NodeScreen';
+import { ACCENT_HEX, hexToRgba } from '../components/nodes/nodeScreenHelpers';
+import { NODE_SCREEN_FIELDS } from '../components/nodes/NodeScreen';
 import type { FieldType } from '../components/nodes/NodeScreen';
 
 // Re-import the style constants we need to verify.

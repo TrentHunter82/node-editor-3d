@@ -20,7 +20,7 @@ import {
   MAX_NODE_HEIGHT,
 } from '../store/slices/nodeSlice';
 import { getPortWorldPos } from '../utils/portPositions';
-import { hexToRgba, ACCENT_HEX } from '../components/nodes/NodeScreen';
+import { hexToRgba, ACCENT_HEX } from '../components/nodes/nodeScreenHelpers';
 
 // ---------------------------------------------------------------------------
 // Helper: replicate the screen width scaling formula from NodeScreen.tsx:597

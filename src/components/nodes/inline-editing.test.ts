@@ -59,8 +59,9 @@ vi.mock('react', async () => {
 });
 
 // Import modules under test AFTER mocks are established
-const { hexToRgba, pushUndoOnFocus, setDataDirect, ACCENT_HEX, NODE_SCREEN_FIELDS } =
-  await import('./NodeScreen');
+const { hexToRgba, pushUndoOnFocus, setDataDirect, ACCENT_HEX } =
+  await import('./nodeScreenHelpers');
+const { NODE_SCREEN_FIELDS } = await import('./NodeScreen');
 const { MiniSparkline, ScrubLabel } = await import('./ScreenExtras');
 
 // =========================================================================

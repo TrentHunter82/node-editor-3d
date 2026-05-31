@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState, useEffect, memo } from 'react';
 import { useEditorStore } from '../../store/editorStore';
-import { hexToRgba, pushUndoOnFocus, setDataDirect } from './NodeScreen';
+import { hexToRgba, pushUndoOnFocus, setDataDirect } from './nodeScreenHelpers';
 import { formatNumberPrecision, formatCompact } from '../../utils/valueFormat';
 
 // ---------------------------------------------------------------------------
