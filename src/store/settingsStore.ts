@@ -77,6 +77,11 @@ export interface SettingsState {
   connectionStyle: ConnectionStyle;
   // Execution
   autoExecute: boolean;
+  /** When true, re-execute the graph on an interval — drives `timer`/`http-fetch`
+   * live data without manual Runs (dashboards, generative animation). */
+  liveMode: boolean;
+  /** Interval in ms between Live Mode re-executions (clamped 100–60000). */
+  liveIntervalMs: number;
   /** When true, graph execution runs in a Web Worker (off main thread) */
   workerExecution: boolean;
   // Visual
@@ -138,6 +143,8 @@ export interface SettingsState {
   setDampingDuration: (duration: number) => void;
   setConnectionStyle: (style: ConnectionStyle) => void;
   setAutoExecute: (enabled: boolean) => void;
+  setLiveMode: (enabled: boolean) => void;
+  setLiveIntervalMs: (ms: number) => void;
   setWorkerExecution: (enabled: boolean) => void;
   setConnectionFlowAnimation: (enabled: boolean) => void;
   setShowExecutionHeatmap: (enabled: boolean) => void;
@@ -200,6 +207,8 @@ export const DEFAULT_SETTINGS = {
   dampingDuration: 0.15,
   connectionStyle: 'bezier' as ConnectionStyle,
   autoExecute: false,
+  liveMode: false,
+  liveIntervalMs: 1000,
   workerExecution: false,
   connectionFlowAnimation: true,
   showExecutionHeatmap: false,
@@ -239,8 +248,9 @@ export function clampLoadedSettings(s: Record<string, unknown>): Partial<typeof 
   if (typeof out.cameraDamping === 'number')   out.cameraDamping   = Math.max(0.01, Math.min(0.2, out.cameraDamping as number));
   if (typeof out.dampingDuration === 'number') out.dampingDuration = Math.max(0.1, Math.min(0.5, out.dampingDuration as number));
   if (typeof out.maxExecutionMs === 'number') out.maxExecutionMs  = Math.max(0, Math.min(300000, out.maxExecutionMs as number));
+  if (typeof out.liveIntervalMs === 'number') out.liveIntervalMs = Math.max(100, Math.min(60000, out.liveIntervalMs as number));
   // Validate boolean fields — reject non-boolean values from corrupt localStorage
-  const booleanFields = ['gridVisible', 'autoExecute', 'workerExecution', 'connectionFlowAnimation',
+  const booleanFields = ['gridVisible', 'autoExecute', 'liveMode', 'workerExecution', 'connectionFlowAnimation',
     'showExecutionHeatmap', 'showNodeScreens', 'autoSave', 'onboardingCompleted',
     'minimapVisible', 'inspectorVisible', 'overviewMode', 'toolbarVisible'] as const;
   for (const key of booleanFields) {
@@ -410,6 +420,12 @@ export const useSettingsStore = create<SettingsState>()(
       },
       setAutoExecute: (enabled) => {
         set(s => { s.autoExecute = enabled; });
+      },
+      setLiveMode: (enabled) => {
+        set(s => { s.liveMode = enabled; });
+      },
+      setLiveIntervalMs: (ms) => {
+        set(s => { s.liveIntervalMs = Math.max(100, Math.min(60000, ms)); });
       },
       setWorkerExecution: (enabled) => {
         set(s => { s.workerExecution = enabled; });
@@ -622,6 +638,8 @@ useSettingsStore.subscribe(
         dampingDuration: state.dampingDuration,
         connectionStyle: state.connectionStyle,
         autoExecute: state.autoExecute,
+        liveMode: state.liveMode,
+        liveIntervalMs: state.liveIntervalMs,
         workerExecution: state.workerExecution,
         connectionFlowAnimation: state.connectionFlowAnimation,
         showExecutionHeatmap: state.showExecutionHeatmap,

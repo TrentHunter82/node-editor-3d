@@ -1,7 +1,15 @@
 import { memo } from 'react';
 import { useEditorStore } from '../../store/editorStore';
+import { useSettingsStore } from '../../store/settingsStore';
 import { Tooltip } from './Tooltip';
 import styles from '../../styles/panels.module.css';
+
+/** Format a millisecond interval compactly (e.g. 1000 → "1s", 500 → "0.5s", 100 → "100ms"). */
+function formatInterval(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  const s = ms / 1000;
+  return `${Number.isInteger(s) ? s : s.toFixed(1)}s`;
+}
 
 export const ExecuteBar = memo(function ExecuteBar() {
   const isExecuting = useEditorStore(s => s.isExecuting);
@@ -16,6 +24,9 @@ export const ExecuteBar = memo(function ExecuteBar() {
   const errorStrategy = useEditorStore(s => s.errorStrategy);
   const setErrorStrategy = useEditorStore(s => s.setErrorStrategy);
   const executionTotalDuration = useEditorStore(s => s.executionTotalDuration);
+  const liveMode = useSettingsStore(s => s.liveMode);
+  const liveIntervalMs = useSettingsStore(s => s.liveIntervalMs);
+  const setLiveMode = useSettingsStore(s => s.setLiveMode);
 
   const handleExecute = () => {
     if (isExecuting) {
@@ -41,6 +52,23 @@ export const ExecuteBar = memo(function ExecuteBar() {
             )}
           </svg>
           {isExecuting ? 'Stop' : 'Run'}
+        </button>
+      </Tooltip>
+
+      <Tooltip label={liveMode
+        ? `Live Mode on — re-running every ${formatInterval(liveIntervalMs)}. Drives timer/http-fetch nodes.`
+        : 'Live Mode — re-execute the graph on an interval (live data & animation)'}>
+        <button
+          className={`${styles.toolbarBtn} ${styles.executeBarBtn} ${liveMode ? styles.toolbarBtnActive : ''}`}
+          onClick={() => setLiveMode(!liveMode)}
+          aria-pressed={liveMode}
+          style={liveMode ? { color: 'var(--success)', borderColor: 'color-mix(in srgb, var(--success) 30%, transparent)' } : {}}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3" fill={liveMode ? 'currentColor' : 'none'} />
+            <path d="M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8" />
+          </svg>
+          {liveMode ? `Live · ${formatInterval(liveIntervalMs)}` : 'Live'}
         </button>
       </Tooltip>
 

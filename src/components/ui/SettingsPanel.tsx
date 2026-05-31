@@ -421,6 +421,8 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
   const toolbarVisible = useSettingsStore(s => s.toolbarVisible);
   const autoSave = useSettingsStore(s => s.autoSave);
   const workerExecution = useSettingsStore(s => s.workerExecution);
+  const liveMode = useSettingsStore(s => s.liveMode);
+  const liveIntervalMs = useSettingsStore(s => s.liveIntervalMs);
   const connectionStyle = useSettingsStore(s => s.connectionStyle);
   const connectionFlowAnimation = useSettingsStore(s => s.connectionFlowAnimation);
   const showExecutionHeatmap = useSettingsStore(s => s.showExecutionHeatmap);
@@ -441,6 +443,8 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
   const setToolbarVisible = useSettingsStore(s => s.setToolbarVisible);
   const setAutoSave = useSettingsStore(s => s.setAutoSave);
   const setWorkerExecution = useSettingsStore(s => s.setWorkerExecution);
+  const setLiveMode = useSettingsStore(s => s.setLiveMode);
+  const setLiveIntervalMs = useSettingsStore(s => s.setLiveIntervalMs);
   const setConnectionStyle = useSettingsStore(s => s.setConnectionStyle);
   const setConnectionFlowAnimation = useSettingsStore(s => s.setConnectionFlowAnimation);
   const setShowExecutionHeatmap = useSettingsStore(s => s.setShowExecutionHeatmap);
@@ -716,6 +720,10 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
             Execution
           </div>
           <ToggleRow label="Worker execution (off-thread)" value={workerExecution} onChange={setWorkerExecution} />
+          <ToggleRow label="Live Mode (re-run on interval)" value={liveMode} onChange={setLiveMode} />
+          {liveMode && (
+            <SliderRow label="Live interval (ms)" value={liveIntervalMs} min={100} max={10000} step={100} onChange={setLiveIntervalMs} />
+          )}
 
           {/* Keyboard Shortcuts section */}
           <KeyboardShortcutsSection />
