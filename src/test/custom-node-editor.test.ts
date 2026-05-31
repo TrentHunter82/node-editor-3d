@@ -243,7 +243,7 @@ describe('Custom Node Definition', () => {
       expression: '42',
     };
     // addCustomNodeDef accepts Omit<CustomNodeDef, 'id'>, but we pass id anyway to verify it is overwritten
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const defId = getState().addCustomNodeDef(defWithId as any);
 
     // The id should be generated, not 'forced-id'

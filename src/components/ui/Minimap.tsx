@@ -121,20 +121,22 @@ export function Minimap() {
   const [throttledConns, setThrottledConns] = useState(connList);
   const nodeCount = nodeList.length;
 
-  // Throttle content updates to ~10fps for large graphs (>50 nodes)
+  // Throttle content updates to ~10fps for large graphs (>50 nodes). All state
+  // updates go through a timer (delay 0 for the immediate case) so setState
+  // never runs synchronously in the effect body — a one-tick deferral that's
+  // imperceptible for a minimap redraw.
   useEffect(() => {
     const now = performance.now();
-    if (nodeCount > 50 && now - lastDrawnRef.current < REDRAW_INTERVAL_MS) {
-      const timer = setTimeout(() => {
-        lastDrawnRef.current = performance.now();
-        setThrottledNodes(nodeList);
-        setThrottledConns(connList);
-      }, REDRAW_INTERVAL_MS - (now - lastDrawnRef.current));
-      return () => clearTimeout(timer);
-    }
-    lastDrawnRef.current = now;
-    setThrottledNodes(nodeList);
-    setThrottledConns(connList);
+    const elapsed = now - lastDrawnRef.current;
+    const delay = nodeCount > 50 && elapsed < REDRAW_INTERVAL_MS
+      ? REDRAW_INTERVAL_MS - elapsed
+      : 0;
+    const timer = setTimeout(() => {
+      lastDrawnRef.current = performance.now();
+      setThrottledNodes(nodeList);
+      setThrottledConns(connList);
+    }, delay);
+    return () => clearTimeout(timer);
   }, [nodeList, connList, nodeCount]);
 
   // Determine LOD mode for rendering
@@ -191,8 +193,13 @@ export function Minimap() {
     };
   }, [nodes, minimapZoom, MAP_W, MAP_H]);
 
-  // Keep scaleRef in sync with latest computed values
-  scaleRef.current = { scale, offsetX, offsetZ };
+  // Keep scaleRef in sync with latest computed values. Done in an effect (runs
+  // after every commit) rather than during render so the render stays pure;
+  // pointer handlers read scaleRef.current asynchronously, so post-commit is
+  // soon enough.
+  useEffect(() => {
+    scaleRef.current = { scale, offsetX, offsetZ };
+  });
 
   const worldToMap = useCallback((x: number, z: number): [number, number] => {
     return [x * scale + offsetX, z * scale + offsetZ];
@@ -320,7 +327,7 @@ export function Minimap() {
     const cx = (minX + maxX) / 2;
     const cz = (minZ + maxZ) / 2;
     flyToWorld(cx, cz);
-  }, [MAP_W, MAP_H, flyToWorld, minimapZoom]);
+  }, [MAP_W, MAP_H, flyToWorld, minimapZoom, prefersReducedMotion]);
 
   /** Start resizing the minimap via corner drag */
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
@@ -585,7 +592,7 @@ export function Minimap() {
       nodeDragRef.current = null;
       rectSelectRef.current = null;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- handlers read from scaleRef, not closure
+   
   }, []);
 
   // Compute viewport rectangle in minimap pixel coordinates

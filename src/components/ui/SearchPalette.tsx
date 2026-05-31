@@ -411,11 +411,11 @@ export function SearchPalette({ open, onClose, placeAt }: SearchPaletteProps) {
     }
 
     return items;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- onClose accessed via stable ref
+     
   }, [query, nodes, customNodeDefs, categoryFilter, recentlyUsedNodes, pinnedNodeTypes, pluginVersion, placeAt]);
 
   // Reset on open — setState in effect is intentional for one-time open transition
-  /* eslint-disable react-hooks/set-state-in-effect */
+   
   useEffect(() => {
     if (open) {
       setQuery('');
@@ -430,7 +430,7 @@ export function SearchPalette({ open, onClose, placeAt }: SearchPaletteProps) {
   useEffect(() => {
     setFocusIndex(i => Math.min(i, Math.max(results.length - 1, 0)));
   }, [results.length]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+   
 
   const handleKey = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Escape') { e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); onClose(); return; }

@@ -53,11 +53,15 @@ const MacroPanel = lazy(() => import('./components/ui/MacroPanel').then(m => ({ 
 const HelpGuidePanel = lazy(() => import('./components/ui/HelpGuidePanel').then(m => ({ default: m.HelpGuidePanel })));
 const KeyboardShortcutsPanel = lazy(() => import('./components/ui/KeyboardShortcutsPanel').then(m => ({ default: m.KeyboardShortcutsPanel })));
 
+// Singleton tracker for the element focused before a modal/panel opened. App is
+// a single root instance, so module scope is the natural home for this — and it
+// keeps the save/restore callbacks free of ref mutation (which the React
+// Compiler lint rules disallow outside effects), so they stay stably memoized.
+let lastModalFocusTrigger: Element | null = null;
+
 /** Panel state hook that persists open/closed to settingsStore and syncs external changes */
 function usePanelState(panelId: string): [boolean, Dispatch<SetStateAction<boolean>>] {
   const [open, setOpenLocal] = useState(() => useSettingsStore.getState().openPanels.includes(panelId));
-  const openRef = useRef(open);
-  openRef.current = open;
   const setOpen: Dispatch<SetStateAction<boolean>> = useCallback((v) => {
     setOpenLocal(prev => {
       const next = typeof v === 'function' ? v(prev) : v;
@@ -69,9 +73,9 @@ function usePanelState(panelId: string): [boolean, Dispatch<SetStateAction<boole
   useEffect(() => {
     return useSettingsStore.subscribe((state) => {
       const shouldBeOpen = state.openPanels.includes(panelId);
-      if (shouldBeOpen !== openRef.current) {
-        setOpenLocal(shouldBeOpen);
-      }
+      // Functional updater: returning prev when unchanged makes React bail out,
+      // so we don't need a render-synced ref to read the latest `open`.
+      setOpenLocal(prev => (prev === shouldBeOpen ? prev : shouldBeOpen));
     });
   }, [panelId]);
   return [open, setOpen];
@@ -106,9 +110,20 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
+  // Track which element had focus before a modal opened, so we can restore it on
+  // close. Stable (`[]` deps) so the close-handler callbacks below stay memoized.
+  const saveTrigger = useCallback(() => { lastModalFocusTrigger = document.activeElement; }, []);
+  const restoreTrigger = useCallback(() => {
+    const el = lastModalFocusTrigger;
+    if (el && typeof (el as HTMLElement).focus === 'function') {
+      (el as HTMLElement).focus();
+    }
+    lastModalFocusTrigger = null;
+  }, []);
+
   // Expose panel openers for SearchPalette
   useEffect(() => {
-    const save = () => { modalTriggerRef.current = document.activeElement; };
+    const save = saveTrigger;
     window.__openFindReplace = () => { save(); setFindReplaceOpen(true); };
     window.__openValidation = () => { save(); setValidationOpen(true); };
     window.__openProfiling = () => { save(); setProfilingOpen(true); };
@@ -153,7 +168,9 @@ export default function App() {
       }
     };
     return () => { window.__openFindReplace = undefined; window.__openValidation = undefined; window.__openProfiling = undefined; window.__openSettings = undefined; window.__openDebug = undefined; window.__openGraphMeta = undefined; window.__openTimeline = undefined; window.__openUndoHistory = undefined; window.__openCheckpoints = undefined; window.__openCustomNodeEditor = undefined; window.__toggleMinimap = undefined; window.__toggleInspector = undefined; window.__toggleGrid = undefined; window.__openNodeSearch = undefined; window.__openDependencyGraph = undefined; window.__openMacroPanel = undefined; window.__openHelpGuide = undefined; window.__openKeyboardShortcuts = undefined; window.__applyWorkspacePreset = undefined; };
-  }, []);
+    // All setters below are stable (usePanelState memoizes them), so the effect
+    // still runs once; listed to satisfy the React Compiler dependency check.
+  }, [saveTrigger, setFindReplaceOpen, setValidationOpen, setProfilingOpen, setSettingsOpen, setDebugOpen, setGraphMetaOpen, setTimelineOpen, setUndoHistoryOpen, setCheckpointsOpen, setNodeSearchOpen, setDependencyGraphOpen, setMacroOpen, setHelpGuideOpen, setKeyboardShortcutsOpen]);
 
   // Load persisted graph from IndexedDB (async) or seed demo nodes
   useEffect(() => {
@@ -171,7 +188,7 @@ export default function App() {
   // Track last missed-click time for double-click detection on empty canvas
   const lastMissedClickRef = useRef(0);
   // World position for placing new node from double-click
-  const searchPlaceAtRef = useRef<[number, number, number] | null>(null);
+  const [searchPlaceAt, setSearchPlaceAt] = useState<[number, number, number] | null>(null);
 
   const handleMissedClick = (event: MouseEvent) => {
     // Only deselect for clicks that originated on the canvas element itself.
@@ -199,7 +216,7 @@ export default function App() {
       // Convert screen click to world XZ position for node placement
       const canvas = event.target as HTMLCanvasElement;
       const wp = getXZFromScreen(event.clientX, event.clientY, canvas);
-      searchPlaceAtRef.current = wp ? [wp[0], 0, wp[1]] : null;
+      setSearchPlaceAt(wp ? [wp[0], 0, wp[1]] : null);
       setSearchOpen(true);
       lastMissedClickRef.current = 0;
       return;
@@ -215,49 +232,38 @@ export default function App() {
     }
   };
 
-  // Track which element had focus before a modal opened, so we can restore it on close
-  const modalTriggerRef = useRef<Element | null>(null);
-  const saveTrigger = useCallback(() => { modalTriggerRef.current = document.activeElement; }, []);
-  const restoreTrigger = useCallback(() => {
-    const el = modalTriggerRef.current;
-    if (el && typeof (el as HTMLElement).focus === 'function') {
-      (el as HTMLElement).focus();
-    }
-    modalTriggerRef.current = null;
-  }, []);
-
   const toggleSearch = useCallback(() => {
-    searchPlaceAtRef.current = null; // Clear position when opening via keyboard
+    setSearchPlaceAt(null); // Clear position when opening via keyboard
     saveTrigger();
     setSearchOpen(v => !v);
   }, [saveTrigger]);
   const closeSearch = useCallback(() => {
-    searchPlaceAtRef.current = null;
+    setSearchPlaceAt(null);
     setSearchOpen(false);
     restoreTrigger();
   }, [restoreTrigger]);
-  const closeFindReplace = useCallback(() => { setFindReplaceOpen(false); restoreTrigger(); }, [restoreTrigger]);
-  const closeValidation = useCallback(() => { setValidationOpen(false); restoreTrigger(); }, [restoreTrigger]);
-  const closeProfiling = useCallback(() => { setProfilingOpen(false); restoreTrigger(); }, [restoreTrigger]);
-  const closeSettings = useCallback(() => { setSettingsOpen(false); restoreTrigger(); }, [restoreTrigger]);
-  const closeDebug = useCallback(() => { setDebugOpen(false); restoreTrigger(); }, [restoreTrigger]);
-  const closeGraphMeta = useCallback(() => { setGraphMetaOpen(false); restoreTrigger(); }, [restoreTrigger]);
-  const closeTimeline = useCallback(() => { setTimelineOpen(false); restoreTrigger(); }, [restoreTrigger]);
-  const closeUndoHistory = useCallback(() => { setUndoHistoryOpen(false); restoreTrigger(); }, [restoreTrigger]);
-  const closeCheckpoints = useCallback(() => { setCheckpointsOpen(false); restoreTrigger(); }, [restoreTrigger]);
+  const closeFindReplace = useCallback(() => { setFindReplaceOpen(false); restoreTrigger(); }, [restoreTrigger, setFindReplaceOpen]);
+  const closeValidation = useCallback(() => { setValidationOpen(false); restoreTrigger(); }, [restoreTrigger, setValidationOpen]);
+  const closeProfiling = useCallback(() => { setProfilingOpen(false); restoreTrigger(); }, [restoreTrigger, setProfilingOpen]);
+  const closeSettings = useCallback(() => { setSettingsOpen(false); restoreTrigger(); }, [restoreTrigger, setSettingsOpen]);
+  const closeDebug = useCallback(() => { setDebugOpen(false); restoreTrigger(); }, [restoreTrigger, setDebugOpen]);
+  const closeGraphMeta = useCallback(() => { setGraphMetaOpen(false); restoreTrigger(); }, [restoreTrigger, setGraphMetaOpen]);
+  const closeTimeline = useCallback(() => { setTimelineOpen(false); restoreTrigger(); }, [restoreTrigger, setTimelineOpen]);
+  const closeUndoHistory = useCallback(() => { setUndoHistoryOpen(false); restoreTrigger(); }, [restoreTrigger, setUndoHistoryOpen]);
+  const closeCheckpoints = useCallback(() => { setCheckpointsOpen(false); restoreTrigger(); }, [restoreTrigger, setCheckpointsOpen]);
   const closeCustomNodeEditor = useCallback(() => { setCustomNodeEditorNodeId(null); restoreTrigger(); }, [restoreTrigger]);
 
-  const closeNodeSearch = useCallback(() => { setNodeSearchOpen(false); restoreTrigger(); }, [restoreTrigger]);
-  const closeDependencyGraph = useCallback(() => { setDependencyGraphOpen(false); restoreTrigger(); }, [restoreTrigger]);
-  const closeMacro = useCallback(() => { setMacroOpen(false); restoreTrigger(); }, [restoreTrigger]);
-  const closeHelpGuide = useCallback(() => { setHelpGuideOpen(false); restoreTrigger(); }, [restoreTrigger]);
-  const closeKeyboardShortcuts = useCallback(() => { setKeyboardShortcutsOpen(false); restoreTrigger(); }, [restoreTrigger]);
-  const toggleNodeSearch = useCallback(() => { saveTrigger(); setNodeSearchOpen(v => !v); }, [saveTrigger]);
-  const toggleFindReplace = useCallback(() => { saveTrigger(); setFindReplaceOpen(v => !v); }, [saveTrigger]);
-  const toggleValidation = useCallback(() => { saveTrigger(); setValidationOpen(v => !v); }, [saveTrigger]);
-  const toggleSettings = useCallback(() => { saveTrigger(); setSettingsOpen(v => !v); }, [saveTrigger]);
-  const toggleDebug = useCallback(() => { saveTrigger(); setDebugOpen(v => !v); }, [saveTrigger]);
-  const toggleProfiling = useCallback(() => { saveTrigger(); setProfilingOpen(v => !v); }, [saveTrigger]);
+  const closeNodeSearch = useCallback(() => { setNodeSearchOpen(false); restoreTrigger(); }, [restoreTrigger, setNodeSearchOpen]);
+  const closeDependencyGraph = useCallback(() => { setDependencyGraphOpen(false); restoreTrigger(); }, [restoreTrigger, setDependencyGraphOpen]);
+  const closeMacro = useCallback(() => { setMacroOpen(false); restoreTrigger(); }, [restoreTrigger, setMacroOpen]);
+  const closeHelpGuide = useCallback(() => { setHelpGuideOpen(false); restoreTrigger(); }, [restoreTrigger, setHelpGuideOpen]);
+  const closeKeyboardShortcuts = useCallback(() => { setKeyboardShortcutsOpen(false); restoreTrigger(); }, [restoreTrigger, setKeyboardShortcutsOpen]);
+  const toggleNodeSearch = useCallback(() => { saveTrigger(); setNodeSearchOpen(v => !v); }, [saveTrigger, setNodeSearchOpen]);
+  const toggleFindReplace = useCallback(() => { saveTrigger(); setFindReplaceOpen(v => !v); }, [saveTrigger, setFindReplaceOpen]);
+  const toggleValidation = useCallback(() => { saveTrigger(); setValidationOpen(v => !v); }, [saveTrigger, setValidationOpen]);
+  const toggleSettings = useCallback(() => { saveTrigger(); setSettingsOpen(v => !v); }, [saveTrigger, setSettingsOpen]);
+  const toggleDebug = useCallback(() => { saveTrigger(); setDebugOpen(v => !v); }, [saveTrigger, setDebugOpen]);
+  const toggleProfiling = useCallback(() => { saveTrigger(); setProfilingOpen(v => !v); }, [saveTrigger, setProfilingOpen]);
 
   // Global keyboard shortcut handler (extracted to hook for modularity)
   useKeyboardShortcuts({
@@ -384,7 +390,7 @@ export default function App() {
           <BoxSelection />
           <Minimap />
           <ContextMenu />
-          <SearchPalette open={searchOpen} onClose={closeSearch} placeAt={searchPlaceAtRef.current} />
+          <SearchPalette open={searchOpen} onClose={closeSearch} placeAt={searchPlaceAt} />
           <ValidationPanel open={validationOpen} onClose={closeValidation} />
           <ProfilingPanel open={profilingOpen} onClose={closeProfiling} />
           <Suspense fallback={null}>

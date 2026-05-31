@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { useEditorStore } from '../../store/editorStore';
 import type { PortConfig, PortType } from '../../types';
 import styles from '../../styles/panels.module.css';
@@ -136,21 +136,28 @@ export function CustomNodeEditorPanel({ open, onClose, nodeId }: CustomNodeEdito
   // Test input values for live preview
   const [testValues, setTestValues] = useState<number[]>([]);
 
-  // Load node data when opening
-  useEffect(() => {
-    if (!open || !node) return;
-    const defId = node.data.customDefId as string | undefined;
-    const def = defId ? customNodeDefs[defId] : undefined;
-    setName(node.title || 'Custom Node');
-    setColor(def?.color || '#2EC4B6');
-    setExpression((node.data.expression as string) || 'in0');
-    const inputDefs = def?.inputs || node.inputs.map(p => ({ label: p.label, portType: p.portType }));
-    setInputs(inputDefs);
-    setOutputs(def?.outputs || node.outputs.map(p => ({ label: p.label, portType: p.portType })));
-    setTestValues(inputDefs.map((_: unknown, i: number) => i + 1));
-    setDirty(false);
-    setShowSuggestions(false);
-  }, [open, nodeId, node, customNodeDefs]);
+  // Load node data into the form on the open transition (or when switching to a
+  // different node). Done during render via a stored key rather than a
+  // setState-in-effect, so opening the panel doesn't trigger a cascading render
+  // — and in-progress edits are no longer clobbered by unrelated store updates.
+  const loadKey = open && node ? nodeId : null;
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  if (loadKey !== loadedKey) {
+    setLoadedKey(loadKey);
+    if (open && node) {
+      const defId = node.data.customDefId as string | undefined;
+      const def = defId ? customNodeDefs[defId] : undefined;
+      setName(node.title || 'Custom Node');
+      setColor(def?.color || '#2EC4B6');
+      setExpression((node.data.expression as string) || 'in0');
+      const inputDefs = def?.inputs || node.inputs.map(p => ({ label: p.label, portType: p.portType }));
+      setInputs(inputDefs);
+      setOutputs(def?.outputs || node.outputs.map(p => ({ label: p.label, portType: p.portType })));
+      setTestValues(inputDefs.map((_: unknown, i: number) => i + 1));
+      setDirty(false);
+      setShowSuggestions(false);
+    }
+  }
 
   const exprError = useMemo(() => validateExpression(expression, inputs.length), [expression, inputs.length]);
   const preview = useMemo(() => evaluatePreview(expression, inputs.length, testValues), [expression, inputs.length, testValues]);

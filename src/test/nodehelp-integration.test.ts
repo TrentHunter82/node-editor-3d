@@ -264,7 +264,7 @@ describe('help category+config consistency', () => {
 
 describe('help accessor edge cases', () => {
   it('getNodeHelp with empty string returns undefined', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     expect(getNodeHelp('' as any)).toBeUndefined();
   });
 

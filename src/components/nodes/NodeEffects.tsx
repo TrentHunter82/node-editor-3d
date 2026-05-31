@@ -21,7 +21,9 @@ export const FadingDiffHighlight = memo(function FadingDiffHighlight({ type, wid
   depth: number;
 }) {
   const matRef = useRef<THREE.MeshBasicMaterial>(null);
-  const startTime = useRef(Date.now());
+  // Lazily stamped on the first frame (and reset on type change) rather than at
+  // render time, so render stays pure (no Date.now() during render).
+  const startTime = useRef<number | null>(null);
 
   // Reset start time when type changes (new highlight)
   useEffect(() => {
@@ -30,6 +32,7 @@ export const FadingDiffHighlight = memo(function FadingDiffHighlight({ type, wid
 
   useFrame(({ invalidate }) => {
     if (!matRef.current) return;
+    if (startTime.current === null) startTime.current = Date.now();
     const elapsed = (Date.now() - startTime.current) / 1000; // seconds
     const duration = 3.0; // match the 3-second auto-clear timer
     // Fade from 0.3 to 0 over the duration, with a brief hold at full opacity
@@ -63,10 +66,12 @@ export const FadingDiffHighlight = memo(function FadingDiffHighlight({ type, wid
 export const SelectionPulse = memo(function SelectionPulse({ width, height, depth }: { width: number; height: number; depth: number }) {
   const matRef = useRef<THREE.MeshBasicMaterial>(null);
   const scaleRef = useRef<Group>(null);
-  const startTime = useRef(Date.now());
+  // Lazily stamped on the first frame to keep render pure (no Date.now() during render).
+  const startTime = useRef<number | null>(null);
 
   useFrame(({ invalidate }) => {
     if (!matRef.current || !scaleRef.current) return;
+    if (startTime.current === null) startTime.current = Date.now();
     const elapsed = (Date.now() - startTime.current) / 1000;
     const duration = 0.35;
     if (elapsed >= duration) {

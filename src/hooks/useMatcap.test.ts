@@ -14,7 +14,7 @@ const mockCtx = {
 };
 
 beforeEach(() => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(mockCtx as any);
 });
 

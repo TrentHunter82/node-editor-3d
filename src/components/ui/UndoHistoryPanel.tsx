@@ -127,13 +127,17 @@ export function UndoHistoryPanel({ open, onClose }: { open: boolean; onClose: ()
   const undoCount = history.undo.length;
   const totalItems = redoCount + 1 + undoCount; // +1 for "current state"
 
-  // Reset focus when panel opens
+  // Reset focus to "current state" on the open transition. The index reset is
+  // done during render via a stored previous value (avoids a setState-in-effect
+  // cascade); the DOM focus stays in an effect since it touches the ref.
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) setFocusIdx(redoCount); // focus on "current state"
+  }
   useEffect(() => {
-    if (open) {
-      setFocusIdx(redoCount); // focus on "current state"
-      requestAnimationFrame(() => panelRef.current?.focus());
-    }
-  }, [open, redoCount]);
+    if (open) requestAnimationFrame(() => panelRef.current?.focus());
+  }, [open]);
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {

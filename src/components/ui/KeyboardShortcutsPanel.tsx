@@ -160,10 +160,15 @@ export function KeyboardShortcutsPanel({ open, onClose }: { open: boolean; onClo
   const resetAllKeyBindings = useSettingsStore(s => s.resetAllKeyBindings);
   const overrideCount = Object.keys(overrides).length;
 
-  // Auto-focus the search input when opened
+  // Reset the filter on the open transition (during render, via a stored
+  // previous value) and focus the input in an effect (it touches the ref).
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) setFilter('');
+  }
   useEffect(() => {
     if (open) {
-      setFilter('');
       // Slight delay to allow the DOM to render before focusing
       requestAnimationFrame(() => {
         inputRef.current?.focus();

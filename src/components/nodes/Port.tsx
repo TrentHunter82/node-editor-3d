@@ -166,22 +166,18 @@ export const Port = memo(function Port({ nodeId, portIndex, type, position }: Po
     return undefined;
   });
 
-  // 300ms delay before showing tooltip
+  // 300ms delay before showing tooltip. Only hovered=true arms the timer;
+  // the cleanup (run on unhover or unmount) clears the timer and hides the
+  // tooltip — keeping setState out of the synchronous effect body.
   useEffect(() => {
-    if (hovered) {
-      hoverTimerRef.current = setTimeout(() => setShowTooltip(true), 300);
-    } else {
-      if (hoverTimerRef.current !== null) {
-        clearTimeout(hoverTimerRef.current);
-        hoverTimerRef.current = null;
-      }
-      setShowTooltip(false);
-    }
+    if (!hovered) return;
+    hoverTimerRef.current = setTimeout(() => setShowTooltip(true), 300);
     return () => {
       if (hoverTimerRef.current !== null) {
         clearTimeout(hoverTimerRef.current);
         hoverTimerRef.current = null;
       }
+      setShowTooltip(false);
     };
   }, [hovered]);
 

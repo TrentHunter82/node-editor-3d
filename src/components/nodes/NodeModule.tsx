@@ -75,15 +75,15 @@ export const NodeModule = memo(function NodeModule({ node, selected, onSelect, t
   const reducedMotion = useReducedMotion();
   const groupRef = useRef<Group>(null);
   const [hovered, setHovered] = useState(false);
-  // Selection pulse: track transition from unselected → selected
-  const prevSelectedRef = useRef(selected);
+  // Selection pulse: bump the pulse key on the unselected → selected transition.
+  // Detected during render via a stored previous value (the React-recommended
+  // alternative to a setState-in-effect), so no extra commit is scheduled.
   const [pulseKey, setPulseKey] = useState(0);
-  useEffect(() => {
-    if (selected && !prevSelectedRef.current) {
-      setPulseKey(k => k + 1);
-    }
-    prevSelectedRef.current = selected;
-  }, [selected]);
+  const [prevSelected, setPrevSelected] = useState(selected);
+  if (selected !== prevSelected) {
+    setPrevSelected(selected);
+    if (selected) setPulseKey(k => k + 1);
+  }
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
   const updateNodeTitle = useEditorStore(s => s.updateNodeTitle);

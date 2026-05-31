@@ -144,10 +144,11 @@ export function NodeSearchPanel({ open, onClose }: { open: boolean; onClose: () 
     };
   }, [setSearchHighlightIds]);
 
-  // Clamp focus index
-  useEffect(() => {
-    if (focusIndex >= results.length) setFocusIndex(Math.max(0, results.length - 1));
-  }, [results.length, focusIndex]);
+  // Clamp focus index during render when the result set shrinks (React bails
+  // out when the value is unchanged, so this converges without an effect).
+  if (focusIndex >= results.length) {
+    setFocusIndex(Math.max(0, results.length - 1));
+  }
 
   // Auto-focus input on open
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useEditorStore } from '../store/editorStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { NodeModule } from './nodes/NodeModule';
@@ -15,14 +15,8 @@ export function NodeGraph() {
   const connections = useEditorStore(s => s.connections);
   const groups = useEditorStore(s => s.groups);
   const selectedIds = useEditorStore(s => s.selectedIds);
-  const searchHighlightIdsRaw = useEditorStore(s => s.searchHighlightIds);
-  const searchHighlightIdsRef = useRef(searchHighlightIdsRaw);
-  searchHighlightIdsRef.current = searchHighlightIdsRaw;
-  const searchHighlightIds = searchHighlightIdsRef.current;
-  const diffHighlightIdsRaw = useEditorStore(s => s.diffHighlightIds);
-  const diffHighlightIdsRef = useRef(diffHighlightIdsRaw);
-  diffHighlightIdsRef.current = diffHighlightIdsRaw;
-  const diffHighlightIds = diffHighlightIdsRef.current;
+  const searchHighlightIds = useEditorStore(s => s.searchHighlightIds);
+  const diffHighlightIds = useEditorStore(s => s.diffHighlightIds);
   const setSelection = useEditorStore(s => s.setSelection);
   const traceNodeId = useEditorStore(s => s.traceNodeId);
   const overviewMode = useSettingsStore(s => s.overviewMode);

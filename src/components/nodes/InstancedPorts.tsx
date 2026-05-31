@@ -75,7 +75,13 @@ export const InstancedPorts = memo(function InstancedPorts({ getLOD, collapsedGr
   // which change when viewport culling epoch bumps or groups collapse)
   const renderVersionRef = useRef(0);
   const prevRenderVersionRef = useRef(-1);
-  renderVersionRef.current += 1;
+  // Bump the render-version counter after every commit (effect with no deps
+  // runs on each render). useFrame compares it against prevRenderVersionRef to
+  // detect prop changes (getLOD / collapsedGroupNodeIds) that warrant a full
+  // instance rebuild. Done in an effect rather than during render to stay pure.
+  useEffect(() => {
+    renderVersionRef.current += 1;
+  });
 
   // Initialize instanceColor buffer on the torus mesh once mounted.
   // Three.js InstancedMesh picks up instanceColor automatically once it exists.
