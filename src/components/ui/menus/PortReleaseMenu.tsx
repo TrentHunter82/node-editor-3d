@@ -8,7 +8,7 @@ import { useEditorStore } from '../../../store/editorStore';
 import { NODE_TYPE_CONFIG, isPortTypeCompatible, PORT_TYPE_COLORS } from '../../../types';
 import type { NodeType, PortType, PortConfig, NodeCategory } from '../../../types';
 import { getAllPluginDefs } from '../../../store/pluginStore';
-import { getXZFromScreen } from '../BoxSelection';
+import { getXZFromScreen } from '../screenProjection';
 import styles from '../../../styles/panels.module.css';
 import { NODE_BUTTON_MAP } from './menuShared';
 import type { ExecFn } from './menuShared';
