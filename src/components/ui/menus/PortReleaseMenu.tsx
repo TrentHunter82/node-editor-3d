@@ -20,6 +20,16 @@ export function PortReleaseMenu({ sourceNodeId, sourcePortIndex, screenX, screen
   const [focusIdx, setFocusIdx] = useState(-1);
   const listRef = useRef<HTMLDivElement>(null);
 
+  // Scroll focused item into view. Declared before the early returns below so the
+  // hook order stays stable across renders (e.g. if the source node is deleted
+  // while this menu is open) — see react-hooks/rules-of-hooks.
+  useEffect(() => {
+    if (focusIdx >= 0 && listRef.current) {
+      const buttons = listRef.current.querySelectorAll('[role="menuitem"]');
+      buttons[focusIdx]?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [focusIdx]);
+
   if (!sourceNode) return null;
 
   // Convert screen position to world XZ position for node placement
@@ -136,14 +146,6 @@ export function PortReleaseMenu({ sourceNodeId, sourcePortIndex, screenX, screen
       buttons[nextIdx]?.focus();
     }
   };
-
-  // Scroll focused item into view
-  useEffect(() => {
-    if (focusIdx >= 0 && listRef.current) {
-      const buttons = listRef.current.querySelectorAll('[role="menuitem"]');
-      buttons[focusIdx]?.scrollIntoView({ block: 'nearest' });
-    }
-  }, [focusIdx]);
 
   // Track flat index for rendering
   let itemIdx = 0;
