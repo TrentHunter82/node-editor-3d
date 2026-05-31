@@ -3,16 +3,36 @@
 Working notes for picking up where the last session left off. Not part of the app;
 safe to delete once the open items below are done.
 
-_Last updated: 2026-05-31_
+_Last updated: 2026-05-31 (session 2 — lint backlog closed + Live Mode added)_
 
 ## Current state (all green)
 
-- **Builds clean:** `npm run build` → exit 0.
-- **All tests pass:** `npm test` → 9075/9075.
+- **Builds clean:** `npm run build` → exit 0 (only the cosmetic three.js/r3f
+  chunk-size warning remains).
+- **Lint clean:** `npm run lint` → **0 problems** (was 16 errors + 29 warnings).
+- **All tests pass:** `npm test` → **9081/9081** (added `live-mode.test.ts`).
 - **Dev server runs:** `npm run dev` (port 5173, auto-increments if taken).
-- **`main` is up to date** at commit `12e68a2` (pushed to
-  `github.com/TrentHunter82/node-editor-3d` over HTTPS).
+- **`main` HEAD is `0d86233`** locally. NOT pushed this session (HTTPS push held
+  for an explicit ask; prior session's pushed commit was `12e68a2`). Run
+  `git push` from your terminal, or ask, to publish `de24b10` + `0d86233`.
 - See `CLAUDE.md` for architecture, commands, and conventions.
+
+## Session 2 (2026-05-31): lint backlog closed + Live Mode
+
+- **react-hooks/react-compiler lint backlog fully cleared** (`de24b10`), all
+  refactored properly (no scoped-disables; stale disables removed). Buckets:
+  refs-during-render, impure-during-render, set-state-in-effect, immutability,
+  and the preserve-manual-memoization/exhaustive-deps cascade in `App.tsx`.
+  Note: fixing a component's first violation can *un-mask* others the React
+  Compiler had been bailing on (saw this in `App.tsx` and `Minimap.tsx`) — fix
+  iteratively and re-lint.
+- **Live Mode feature** (`0d86233`): execute-bar toggle + Settings interval that
+  re-runs the graph on a timer (100ms–60s) so `timer`/`http-fetch` update
+  hands-free. New `useLiveExecution` hook; `liveMode`/`liveIntervalMs` settings.
+- **`CREATIVE-USE-CASES.md`** added — grounded use-case brainstorm + a prioritized
+  enhancement list (next picks: copy/export a node's computed value; a
+  presentation/"mini-app" view; `http-fetch` method/headers + CORS note; CSV
+  nodes; bundle code-splitting to clear the build warning).
 
 ## What was done this session (the revival)
 
@@ -37,33 +57,11 @@ failing tests. All fixed and pushed in commit `12e68a2`:
 
 ## Open items / next steps (priority order)
 
-### 1. Lint cleanup (~47 errors, all in `src/`) — DEFERRED, not started
-`npm run lint` is the source of truth. These are advisory (don't fail the build).
-Deferred because the earlier session's tool channel was corrupting file reads and
-editing ~47 sites blind was too risky. Buckets:
-
-- **`@typescript-eslint/no-explicit-any`** (~23) — store generics & R3F props:
-  `store/editorStore.ts` (L774, L1355), `store/slices/{checkpoint,subgraph,template,undo}Slice.ts`,
-  `components/connections/Pipe.tsx`, `PendingPipe.tsx`. Mostly intentional; either
-  type properly or scoped-disable with a rationale.
-- **`react-hooks/*` (refs / purity / set-state-in-effect / rules-of-hooks)** (~16)
-  — new React-19-compiler-readiness rules from `eslint-plugin-react-hooks` v7.
-  Flags working patterns: `Date.now()` during render in `NodeEffects.tsx`,
-  ref access during render in `NodeGraph.tsx`/`App.tsx`/`InstancedPorts.tsx`,
-  `setState` in effects across several panels, and a conditional `useEffect` in
-  `components/ui/menus/PortReleaseMenu.tsx` (L141 — the early `return null` guards
-  at L23/L38 sit before a hook → genuine rules-of-hooks issue worth fixing).
-- **`react-refresh/only-export-components`** (~9) — files exporting a component +
-  a helper (breaks HMR): `NodeScreen.tsx`, `BoxSelection.tsx`,
-  `GroupBoundingBox.tsx`, `NodeProfilingOverlay.tsx`. Fix by moving helpers to
-  their own modules.
-- **`no-unsafe-function-type`** (~5) — `Function` type in
-  `utils/executionProcessors.ts` (expression cache). Replace with a precise
-  `(...args: unknown[]) => unknown` signature.
-
-Recommended approach: do it in a stable session, one rule-bucket at a time, run
-`npm test` + `npm run build` after each bucket. The `PortReleaseMenu` rules-of-hooks
-one is the only one that hints at a latent runtime bug — prioritize it.
+### 1. Lint cleanup — ✅ DONE (session 2, `de24b10`)
+`npm run lint` → 0 problems. The whole backlog (no-explicit-any, react-refresh,
+no-unsafe-function-type, rules-of-hooks, and the remaining react-hooks/react-
+compiler readiness rules) is cleared, all refactored properly. Lint still isn't
+part of `build` (see Nice-to-haves) — add a CI/precommit gate to keep it at 0.
 
 ### 2. Bundle code-splitting — NOT started
 Build warns: `three` (719 kB), `r3f` (522 kB), `index` (614 kB) chunks > 500 kB.
