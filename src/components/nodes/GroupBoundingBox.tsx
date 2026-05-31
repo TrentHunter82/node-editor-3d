@@ -25,7 +25,7 @@ const GROUP_PALETTE = [
 ];
 
 /** Derive a stable color from a groupId string */
-export function colorFromId(id: string): string {
+function colorFromId(id: string): string {
   let hash = 0;
   for (let i = 0; i < id.length; i++) {
     hash = (hash * 31 + id.charCodeAt(i)) | 0;
