@@ -7,6 +7,7 @@
  * - deleteTemplate / importTemplates / exportTemplates
  */
 import type { Connection, NodeTemplate } from '../../types';
+import type { EditorState } from '../editorStore';
 
 interface TemplateHelpers {
   pushUndo: (label?: string) => void;
@@ -16,8 +17,8 @@ interface TemplateHelpers {
 }
 
 export function createTemplateActions(
-  set: (fn: (state: any) => void) => void,
-  get: () => any,
+  set: (fn: (state: EditorState) => void) => void,
+  get: () => EditorState,
   helpers: TemplateHelpers,
 ) {
   const { pushUndo, genId, genConnectionId, genTemplateId } = helpers;

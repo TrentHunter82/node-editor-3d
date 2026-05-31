@@ -8,7 +8,8 @@
  * - deleteSubgraphNode (remove subgraph node and cascade-cleanup inner graphs)
  * - expandSubgraph (inline inner graph nodes back into parent)
  */
-import type { EditorNode, Connection, NodeGroup, SubgraphNodeDef, GraphData, PortConfig, PortType } from '../../types';
+import type { EditorNode, Connection, NodeGroup, SubgraphNodeDef, GraphData, PortConfig, PortType, ExecutionStats } from '../../types';
+import type { EditorState } from '../editorStore';
 import { invalidateDownstream } from '../../utils/execution';
 
 // ---------------------------------------------------------------------------
@@ -44,8 +45,8 @@ interface SubgraphHelpers {
   syncNextId: (nodes: Record<string, EditorNode>, connections: Record<string, Connection>, groups?: Record<string, NodeGroup>, extraKeys?: string[]) => void;
   clearExecutionTimeouts: () => void;
   getExecutionCache: (graphId: string) => Map<string, unknown> | undefined;
-  clearAllTransientState: (state: any) => void;
-  executionInitialStats: any;
+  clearAllTransientState: (state: EditorState) => void;
+  executionInitialStats: ExecutionStats;
   inactiveGraphs: Record<string, GraphData>;
   saveInactiveGraphsToUndo: (graphIds: string[]) => void;
   markCreatedInactiveGraphs: (graphIds: string[]) => void;
@@ -59,8 +60,8 @@ interface SubgraphHelpers {
 // ---------------------------------------------------------------------------
 
 export function createSubgraphActions(
-  set: (fn: (state: any) => void) => void,
-  get: () => any,
+  set: (fn: (state: EditorState) => void) => void,
+  get: () => EditorState,
   helpers: SubgraphHelpers,
 ) {
   const {

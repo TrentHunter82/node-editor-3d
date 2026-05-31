@@ -173,7 +173,7 @@ export function snapToGrid(value: number): number {
   return Math.round(value / GRID_SNAP_SIZE) * GRID_SNAP_SIZE;
 }
 
-interface EditorState {
+export interface EditorState {
   nodes: Record<string, EditorNode>;
   connections: Record<string, Connection>;
   groups: Record<string, NodeGroup>;
@@ -771,7 +771,7 @@ export const useEditorStore = create<EditorState>()(
         genCustomDefId: () => `customdef-${nextId++}`,
         scheduleAutoExecute: (execute: () => void) => scheduleAutoExecute(execute),
         makePortDefs,
-        invalidateDownstream: (nodeId: string, connections: any, cache: any) => invalidateDownstream(nodeId, connections, cache),
+        invalidateDownstream: (nodeId: string, connections: Record<string, Connection>, cache: Map<string, unknown> | undefined) => invalidateDownstream(nodeId, connections, cache),
         getExecutionCache,
         getActiveUndoGraphId,
       }),
@@ -1352,7 +1352,7 @@ export const useEditorStore = create<EditorState>()(
         cancelAutoExecute,
         syncNextId,
         clearExecutionTimeoutsAndCache,
-        clearAllTransientState: clearAllTransientState as (state: any) => void,
+        clearAllTransientState,
         executionInitialStats: executionInitialState.executionStats,
         getActiveUndoGraphId,
       }),

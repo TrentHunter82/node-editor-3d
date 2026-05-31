@@ -132,7 +132,11 @@ describe('createCheckpointActions', () => {
       executionInitialStats,
     };
 
-    actions = createCheckpointActions(set, get, helpers);
+    actions = createCheckpointActions(
+      set as unknown as Parameters<typeof createCheckpointActions>[0],
+      get as unknown as Parameters<typeof createCheckpointActions>[1],
+      helpers,
+    );
   });
 
   // ========================================================================

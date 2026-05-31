@@ -6,7 +6,8 @@
  * - restoreCheckpoint (restore graph from checkpoint)
  * - deleteCheckpoint (remove a checkpoint)
  */
-import type { EditorNode, Connection, NodeGroup, CheckpointEntry } from '../../types';
+import type { EditorNode, Connection, NodeGroup, CheckpointEntry, ExecutionStats } from '../../types';
+import type { EditorState } from '../editorStore';
 import { migrateAllNodes } from '../../utils/nodeVersioning';
 
 interface CheckpointHelpers {
@@ -14,17 +15,17 @@ interface CheckpointHelpers {
   cancelAutoExecute: () => void;
   syncNextId: (nodes: Record<string, EditorNode>, connections: Record<string, Connection>, groups?: Record<string, NodeGroup>, extraKeys?: string[]) => void;
   clearExecutionTimeoutsAndCache: (graphId: string) => void;
-  clearAllTransientState: (state: any) => void;
+  clearAllTransientState: (state: EditorState) => void;
   getActiveUndoGraphId: () => string;
   genCheckpointId: () => string;
-  executionInitialStats: any;
+  executionInitialStats: ExecutionStats;
 }
 
 const MAX_CHECKPOINTS = 20;
 
 export function createCheckpointActions(
-  set: (fn: (state: any) => void) => void,
-  get: () => any,
+  set: (fn: (state: EditorState) => void) => void,
+  get: () => EditorState,
   helpers: CheckpointHelpers,
 ) {
   const { pushUndo, cancelAutoExecute, syncNextId, clearExecutionTimeoutsAndCache, clearAllTransientState, getActiveUndoGraphId, genCheckpointId, executionInitialStats } = helpers;

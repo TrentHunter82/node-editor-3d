@@ -10,6 +10,7 @@
  * - createUndoActions factory (undo, redo, jumpToUndo, diffUndoSnapshots, etc.)
  */
 import type { EditorNode, Connection, NodeGroup, CustomNodeDef, SubgraphNodeDef, CheckpointEntry, GraphData } from '../../types';
+import type { EditorState } from '../editorStore';
 import { compareGraphs } from '../../utils/graphDiff';
 import type { EnrichedGraphDiff, SnapshotSummary } from '../../utils/graphDiff';
 import { deleteExecutionCache, deletePersistedExecutionResults } from './executionSlice';
@@ -229,13 +230,12 @@ export interface UndoHelpers {
   cancelAutoExecute: () => void;
   syncNextId: (nodes: Record<string, EditorNode>, connections: Record<string, Connection>, groups?: Record<string, NodeGroup>, extraKeys?: string[]) => void;
   clearExecutionTimeoutsAndCache: (graphId: string) => void;
-  clearAllTransientState: (state: any) => void;
+  clearAllTransientState: (state: EditorState) => void;
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export function createUndoActions(
-  set: (fn: (state: any) => void) => void,
-  get: () => any,
+  set: (fn: (state: EditorState) => void) => void,
+  get: () => EditorState,
   helpers: UndoHelpers,
 ): UndoActions {
   const { cancelAutoExecute, syncNextId, clearExecutionTimeoutsAndCache, clearAllTransientState } = helpers;

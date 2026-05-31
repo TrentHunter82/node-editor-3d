@@ -390,12 +390,16 @@ describe('createUndoActions', () => {
     const set = (fn: (s: typeof state) => void) => { fn(state); };
     const get = () => state;
 
-    actions = createUndoActions(set, get, {
-      cancelAutoExecute: () => { cancelCalled++; },
-      syncNextId: () => { syncNextIdCalled++; },
-      clearExecutionTimeoutsAndCache: () => { clearTimeoutsCalled++; },
-      clearAllTransientState: () => { _clearTransientCalled++; },
-    });
+    actions = createUndoActions(
+      set as unknown as Parameters<typeof createUndoActions>[0],
+      get as unknown as Parameters<typeof createUndoActions>[1],
+      {
+        cancelAutoExecute: () => { cancelCalled++; },
+        syncNextId: () => { syncNextIdCalled++; },
+        clearExecutionTimeoutsAndCache: () => { clearTimeoutsCalled++; },
+        clearAllTransientState: () => { _clearTransientCalled++; },
+      },
+    );
   });
 
   describe('pushUndoSnapshot', () => {

@@ -88,7 +88,11 @@ describe('createTemplateActions', () => {
       genTemplateId: () => `tmpl-${nextTemplateId++}`,
     };
 
-    actions = createTemplateActions(set, get, helpers);
+    actions = createTemplateActions(
+      set as unknown as Parameters<typeof createTemplateActions>[0],
+      get as unknown as Parameters<typeof createTemplateActions>[1],
+      helpers,
+    );
   });
 
   // ========================================================================
