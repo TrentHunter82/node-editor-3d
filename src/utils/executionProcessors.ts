@@ -30,14 +30,18 @@ export const _sandboxedGlobals = [
 ];
 export const _sandboxedValues = _sandboxedGlobals.map(() => undefined);
 
+// A compiled expression: callable with the param values (positional) and returns
+// the evaluated result. Args/return are unknown because expressions are dynamic.
+type CompiledExpression = (...args: unknown[]) => unknown;
+
 // Expression function cache: avoids recompilation of identical expressions across execution cycles
 // Key format: `${signature}|${expression}` where signature = param names joined
-const _expressionCache = new Map<string, Function>();
+const _expressionCache = new Map<string, CompiledExpression>();
 const MAX_EXPRESSION_CACHE_SIZE = 256;
 
 /** Get or compile an expression function with the given parameter names.
  * Uses LRU eviction: most-recently-used entries survive, least-recently-used are evicted. */
-export function getCompiledExpression(paramNames: string[], expression: string): Function {
+export function getCompiledExpression(paramNames: string[], expression: string): CompiledExpression {
   const key = paramNames.join(',') + '|' + expression;
   let fn = _expressionCache.get(key);
   if (fn) {
@@ -46,7 +50,7 @@ export function getCompiledExpression(paramNames: string[], expression: string):
     _expressionCache.set(key, fn);
     return fn;
   }
-  fn = new Function(...paramNames, `"use strict"; return (() => (${expression}))()`);
+  fn = new Function(...paramNames, `"use strict"; return (() => (${expression}))()`) as CompiledExpression;
   // Evict LRU (first entry in Map insertion order) if cache is full
   if (_expressionCache.size >= MAX_EXPRESSION_CACHE_SIZE) {
     const firstKey = _expressionCache.keys().next().value;
@@ -632,7 +636,7 @@ export const processors: Record<NodeType, NodeProcessor> = {
     const arr = Array.isArray(inputs[0]) ? inputs[0] : [];
     const expression = (node.data.expression as string) ?? 'x !== null';
     // Compile once (may throw SyntaxError) — include Math for Math.* access
-    let fn: Function;
+    let fn: CompiledExpression;
     try {
       fn = getCompiledExpression(['Math', ..._sandboxedGlobals, 'x', 'i'], expression);
     } catch (err) {
@@ -653,7 +657,7 @@ export const processors: Record<NodeType, NodeProcessor> = {
     const arr = Array.isArray(inputs[0]) ? inputs[0] : [];
     const expression = (node.data.expression as string) ?? 'x';
     // Compile once (may throw SyntaxError) — include Math for Math.* access
-    let fn: Function;
+    let fn: CompiledExpression;
     try {
       fn = getCompiledExpression(['Math', ..._sandboxedGlobals, 'x', 'i'], expression);
     } catch (err) {
@@ -675,7 +679,7 @@ export const processors: Record<NodeType, NodeProcessor> = {
     const initial = inputs[1] ?? 0;
     const expression = (node.data.expression as string) ?? 'acc + x';
     // Compile once (may throw SyntaxError) — include Math for Math.* access
-    let fn: Function;
+    let fn: CompiledExpression;
     try {
       fn = getCompiledExpression(['Math', ..._sandboxedGlobals, 'acc', 'x', 'i'], expression);
     } catch (err) {

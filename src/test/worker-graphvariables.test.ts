@@ -29,7 +29,7 @@ import type { NodeResult } from '../utils/execution';
 let mockExecuteInWorker: ReturnType<typeof vi.fn>;
 
 vi.mock('../workers/executionWorkerManager', () => ({
-  executeInWorker: (...args: unknown[]) => (mockExecuteInWorker as Function)(...args),
+  executeInWorker: (...args: unknown[]) => (mockExecuteInWorker as (...a: unknown[]) => unknown)(...args),
   getExecutionWorker: () => ({}),
   terminateExecutionWorker: vi.fn(),
   checkWorkerHealth: vi.fn().mockResolvedValue(true),
