@@ -40,6 +40,7 @@ import { saveMultiGraphAsync } from '../utils/serialization';
 import type { MultiGraphStorage } from '../utils/serialization';
 import { useSettingsStore } from './settingsStore';
 import { topologicalSort, invalidateDownstream } from '../utils/execution';
+import { dispatchRemote, REMOTE_RESULT_KEY, REMOTE_STATUS_KEY, REMOTE_ERROR_KEY, REMOTE_PROGRESS_KEY } from '../utils/remoteExecution';
 import type { EnrichedGraphDiff, SnapshotSummary } from '../utils/graphDiff';
 import type { AlignDirection, DistributeDirection } from '../utils/layout';
 import { selectionInitialState, createSelectionActions } from './slices/selectionSlice';
@@ -95,6 +96,9 @@ function genTemplateId(): string {
 // --- Auto-execute debounce ---
 let autoExecTimer: ReturnType<typeof setTimeout> | null = null;
 const AUTO_EXEC_DEBOUNCE_MS = 200;
+
+// --- Remote execution: in-flight dispatch cancellation, keyed by node id ---
+const remoteAbortControllers = new Map<string, AbortController>();
 
 // --- Diff highlight auto-clear timer ---
 let diffHighlightTimer: ReturnType<typeof setTimeout> | null = null;
@@ -414,6 +418,9 @@ export interface EditorState {
   deleteCheckpoint: (checkpointId: string) => void;
   // --- Plugin node support ---
   fetchNodeData: (nodeId: string, url: string) => void;
+  // --- Remote execution (dispatch a node to a backend, stream results back) ---
+  dispatchRemoteNode: (nodeId: string) => void;
+  cancelRemoteNode: (nodeId: string) => void;
   // --- Graph variables ---
   graphVariables: Record<string, unknown>;
   clearGraphVariables: () => void;
@@ -1407,6 +1414,77 @@ export const useEditorStore = create<EditorState>()(
             // Trigger auto-execute so downstream error port propagates
             scheduleAutoExecute(() => get().executeGraph());
           });
+      },
+
+      // Dispatch a node to the active execution backend (see utils/remoteExecution).
+      // Mirrors fetchNodeData: marks the node 'running', streams progress onto
+      // node.data, writes the result back, then re-runs so the synchronous engine
+      // (via the node's processor reading the cache) picks it up. The result lands
+      // on node.data under the REMOTE_* keys; remoteCachedResult exposes it.
+      dispatchRemoteNode: (nodeId) => {
+        const state = get();
+        const node = state.nodes[nodeId];
+        if (!node) return;
+
+        // Supersede any in-flight dispatch for this node
+        remoteAbortControllers.get(nodeId)?.abort();
+        const controller = new AbortController();
+        remoteAbortControllers.set(nodeId, controller);
+
+        // Gather inputs from upstream node outputs, keyed by this node's input port
+        const inputs: Record<number, unknown> = {};
+        for (const c of Object.values(state.connections)) {
+          if (c.targetNodeId === nodeId) {
+            inputs[c.targetPortIndex] = state.nodeOutputs[c.sourceNodeId]?.[c.sourcePortIndex];
+          }
+        }
+
+        set(s => {
+          s.executionStates[nodeId] = 'running';
+          const n = s.nodes[nodeId];
+          if (n) {
+            n.data[REMOTE_PROGRESS_KEY] = 0;
+            n.data[REMOTE_ERROR_KEY] = '';
+          }
+        });
+
+        void dispatchRemote(
+          { nodeId, nodeType: node.type, inputs, data: { ...node.data } },
+          {
+            signal: controller.signal,
+            onProgress: (p) => {
+              set(s => { const n = s.nodes[nodeId]; if (n) n.data[REMOTE_PROGRESS_KEY] = p; });
+            },
+          },
+        ).then(result => {
+          // If this dispatch was superseded by a newer one, leave state to the newer run
+          if (controller.signal.aborted && result.error === 'cancelled') return;
+          remoteAbortControllers.delete(nodeId);
+          set(s => {
+            const n = s.nodes[nodeId];
+            if (n) {
+              n.data[REMOTE_RESULT_KEY] = result.status === 'ok' ? result.outputs : null;
+              n.data[REMOTE_STATUS_KEY] = result.status;
+              n.data[REMOTE_ERROR_KEY] = result.error ?? '';
+              n.data[REMOTE_PROGRESS_KEY] = 1;
+            }
+            s.executionStates[nodeId] = result.status === 'ok' ? 'complete' : 'error';
+            if (result.status === 'error' && result.error) s.executionErrors[nodeId] = result.error;
+          });
+          scheduleAutoExecute(() => get().executeGraph());
+        });
+      },
+
+      cancelRemoteNode: (nodeId) => {
+        const controller = remoteAbortControllers.get(nodeId);
+        if (!controller) return;
+        controller.abort();
+        remoteAbortControllers.delete(nodeId);
+        set(s => {
+          if (s.executionStates[nodeId] === 'running') s.executionStates[nodeId] = 'idle';
+          const n = s.nodes[nodeId];
+          if (n) n.data[REMOTE_PROGRESS_KEY] = 0;
+        });
       },
 
     }))
