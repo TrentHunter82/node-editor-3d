@@ -229,7 +229,7 @@ describe('duplicateSelected', () => {
     expect((state.nodes[newId].data as any).nested.value).toBe(42);
   });
 
-  it('preserves optional fields (collapsed, groupId, comment) but not locked', () => {
+  it('preserves optional fields (collapsed, groupId, comment, locked)', () => {
     const { state, actions } = makeTestContext();
     state.nodes = {
       n1: makeNode('n1', 'source', {
@@ -248,8 +248,8 @@ describe('duplicateSelected', () => {
     expect(dup.collapsed).toBe(true);
     expect(dup.groupId).toBe('g1');
     expect(dup.comment).toBe('test comment');
-    // locked should NOT propagate to duplicated nodes
-    expect(dup.locked).toBeUndefined();
+    // locked flag is carried over to the duplicated node
+    expect(dup.locked).toBe(true);
   });
 });
 

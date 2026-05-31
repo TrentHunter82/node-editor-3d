@@ -10,7 +10,7 @@ import type { NodeHelpEntry } from '../utils/nodeHelp';
 type HelpModule = typeof import('../utils/nodeHelp');
 let _module: HelpModule | null = null;
 let _loadPromise: Promise<HelpModule> | null = null;
-let _subscribers = new Set<() => void>();
+const _subscribers = new Set<() => void>();
 
 function loadHelpModule(): Promise<HelpModule> {
   if (!_loadPromise) {

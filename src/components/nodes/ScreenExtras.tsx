@@ -175,7 +175,15 @@ function formatDisplayValue(v: unknown, fmt: string): string {
 }
 
 export const DisplayReadout = memo(function DisplayReadout({ nodeId, accentHex, format }: DisplayReadoutProps) {
-  const value = useEditorStore(s => s.nodeOutputs[nodeId]?.[0] ?? null);
+  // The display node is a sink (no outputs), so show the value arriving at its
+  // input port 0 — resolved through the incoming connection's source output.
+  const value = useEditorStore(s => {
+    const incoming = Object.values(s.connections).find(
+      c => c.targetNodeId === nodeId && c.targetPortIndex === 0
+    );
+    if (!incoming) return null;
+    return s.nodeOutputs[incoming.sourceNodeId]?.[incoming.sourcePortIndex] ?? null;
+  });
   const fmt = format ?? 'auto';
   const typeLabel = resolveTypeLabel(value);
   const displayStr = formatDisplayValue(value, fmt);

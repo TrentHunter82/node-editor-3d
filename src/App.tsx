@@ -370,7 +370,7 @@ export default function App() {
         </Canvas>
       </ErrorBoundary>
       <ErrorBoundary label="UI Panels">
-        <div data-ui-panel style={uiScale !== 1 ? { zoom: uiScale } : undefined}>
+        <div data-ui-panel style={{ position: 'relative', zIndex: 1, ...(uiScale !== 1 ? { zoom: uiScale } : {}) }}>
           <WorkspaceTabBar />
           <GraphTabBar />
           <BreadcrumbNav />

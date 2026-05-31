@@ -321,8 +321,10 @@ export const processors: Record<NodeType, NodeProcessor> = {
     return { 0: min + value * (max - min) };
   },
 
-  display: (_node, inputs) => {
-    return { 0: inputs[0] ?? null };
+  // Sink node: has an input but no output ports, so it produces no outputs.
+  // The on-node DisplayReadout shows the value by reading its incoming edge.
+  display: () => {
+    return {};
   },
 
   // --- Subgraph ---

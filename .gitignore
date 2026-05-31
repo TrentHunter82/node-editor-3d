@@ -44,3 +44,6 @@ progress.txt
 tests-passing.signal
 skills-lock.json
 AGENTS.md
+
+# Scratch/temp files used by tooling during development
+_*

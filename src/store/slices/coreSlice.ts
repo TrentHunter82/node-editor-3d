@@ -230,6 +230,7 @@ export function createCoreActions(
             groupId: node.groupId,
             comment: node.comment,
             autoInserted: node.autoInserted,
+            locked: node.locked,
             ...(node.width !== undefined && { width: node.width }),
             ...(node.height !== undefined && { height: node.height }),
           };
@@ -447,6 +448,7 @@ export function createCoreActions(
             groupId: node.groupId,
             comment: node.comment,
             autoInserted: node.autoInserted,
+            locked: node.locked,
             ...(node.width !== undefined && { width: node.width }),
             ...(node.height !== undefined && { height: node.height }),
           };

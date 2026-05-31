@@ -23,8 +23,12 @@ const SCREEN_FACTOR = 110;   // nodeD-to-CSS-px conversion factor
 /**
  * Compute the minimum node depth (world units) needed to display all screen
  * content without scrolling.
+ *
+ * Note: inputCount is part of the signature for symmetry with callers and
+ * potential future use, but does not currently affect the computed depth
+ * (inputs render as absolutely-positioned connection dots, not flow content).
  */
-export function getMinNodeDepth(nodeType: NodeType, inputCount: number, outputCount: number): number {
+export function getMinNodeDepth(nodeType: NodeType, _inputCount: number, outputCount: number): number {
   const fields = NODE_SCREEN_FIELDS[nodeType] ?? [];
   const contentH = PX_PADDING + PX_HEADER
     + (fields.length > 0 ? PX_SECTION_LABEL : 0)

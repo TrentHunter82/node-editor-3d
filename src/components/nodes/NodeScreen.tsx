@@ -5,7 +5,7 @@ import type { Group } from 'three';
 import { useEditorStore } from '../../store/editorStore';
 import type { EditorNode, ExecutionState } from '../../types';
 import { NODE_TYPE_CONFIG, PORT_TYPE_COLORS } from '../../types';
-import { DEFAULT_NODE_WIDTH, DEFAULT_NODE_HEIGHT } from '../../store/slices/nodeSlice';
+import { DEFAULT_NODE_WIDTH } from '../../store/slices/nodeSlice';
 import { OutputReadout, DisplayReadout, ScrubLabel, ConnectionDots } from './ScreenExtras';
 import { NODE_SCREEN_FIELDS, FIELD_TYPE_TO_PORT } from './nodeFields';
 import type { FieldDef, FieldType } from './nodeFields';
