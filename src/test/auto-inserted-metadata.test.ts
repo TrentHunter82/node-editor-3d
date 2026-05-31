@@ -442,7 +442,7 @@ describe('autoInserted field - duplicate preserves flag', () => {
     const concatId = getStore().addNode('concat', [5, 0, 0]);
     connectPorts(srcId, 0, concatId, 0);
 
-    findAutoInsertedNodes()[0]; // verify auto-inserted node exists
+    expect(findAutoInsertedNodes()[0]).toBeDefined(); // verify auto-inserted node exists
 
     // Select all and duplicate
     const allIds = Object.keys(getStore().nodes);

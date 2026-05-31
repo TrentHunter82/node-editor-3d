@@ -89,7 +89,7 @@ describe('useNodeHelp', () => {
     // Preload to ensure module is cached
     preloadNodeHelp();
     // Wait for the dynamic import to resolve
-    await vi.dynamicImportSettled?.() ?? new Promise(r => setTimeout(r, 50));
+    await (vi.dynamicImportSettled?.() ?? new Promise(r => setTimeout(r, 50)));
 
     // Render after module is already loaded -- effect should return early
     const { result } = renderHook(() => useNodeHelp('source'));

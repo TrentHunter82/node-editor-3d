@@ -275,7 +275,7 @@ export const processors: Record<NodeType, NodeProcessor> = {
     return { 0: Boolean(inputs[0]) || Boolean(inputs[1]) };
   },
   not: (_node, inputs) => {
-    return { 0: !Boolean(inputs[0]) };
+    return { 0: !inputs[0] };
   },
   xor: (_node, inputs) => {
     const a = Boolean(inputs[0]);

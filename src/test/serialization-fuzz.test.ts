@@ -436,7 +436,7 @@ describe('Serialization Fuzz Tests', () => {
     });
 
     it('deeply nested objects (50 levels)', () => {
-      let obj: Record<string, unknown> = { nodes: {}, connections: {} };
+      const obj: Record<string, unknown> = { nodes: {}, connections: {} };
       let current = obj;
       for (let i = 0; i < 50; i++) {
         current.nested = {};
