@@ -3,36 +3,61 @@
 Working notes for picking up where the last session left off. Not part of the app;
 safe to delete once the open items below are done.
 
-_Last updated: 2026-05-31 (session 2 — lint backlog closed + Live Mode added)_
+_Last updated: 2026-06-01 (session 2 — lint backlog closed, Live Mode, remote-exec spike; pushed)_
 
-## Current state (all green)
+## Current state (all green, pushed)
 
 - **Builds clean:** `npm run build` → exit 0 (only the cosmetic three.js/r3f
   chunk-size warning remains).
 - **Lint clean:** `npm run lint` → **0 problems** (was 16 errors + 29 warnings).
-- **All tests pass:** `npm test` → **9081/9081** (added `live-mode.test.ts`).
+- **All tests pass:** `npm test` → **9095/9095** (added `live-mode.test.ts` +
+  `remote-execution.test.ts`).
 - **Dev server runs:** `npm run dev` (port 5173, auto-increments if taken).
-- **`main` HEAD is `0d86233`** locally. NOT pushed this session (HTTPS push held
-  for an explicit ask; prior session's pushed commit was `12e68a2`). Run
-  `git push` from your terminal, or ask, to publish `de24b10` + `0d86233`.
+- **`main` is pushed and up to date at `2a45c48`** (verified via `git ls-remote`)
+  on `github.com/TrentHunter82/node-editor-3d` over HTTPS. Session 2 added 4
+  commits on top of the revival's `12e68a2`: `de24b10` (lint), `0d86233` (Live
+  Mode + use-cases doc), `cd20bff` (handoff), `2a45c48` (remote-exec spike).
 - See `CLAUDE.md` for architecture, commands, and conventions.
 
-## Session 2 (2026-05-31): lint backlog closed + Live Mode
+## Session 2 (2026-05-31 → 06-01): lint backlog closed + Live Mode + remote-exec spike
 
 - **react-hooks/react-compiler lint backlog fully cleared** (`de24b10`), all
   refactored properly (no scoped-disables; stale disables removed). Buckets:
   refs-during-render, impure-during-render, set-state-in-effect, immutability,
   and the preserve-manual-memoization/exhaustive-deps cascade in `App.tsx`.
-  Note: fixing a component's first violation can *un-mask* others the React
-  Compiler had been bailing on (saw this in `App.tsx` and `Minimap.tsx`) — fix
-  iteratively and re-lint.
+  **Gotcha:** fixing a component's *first* compiler violation can un-mask others
+  the React Compiler had been bailing on (saw this in `App.tsx` and `Minimap.tsx`)
+  — fix iteratively and re-lint after each change.
 - **Live Mode feature** (`0d86233`): execute-bar toggle + Settings interval that
   re-runs the graph on a timer (100ms–60s) so `timer`/`http-fetch` update
   hands-free. New `useLiveExecution` hook; `liveMode`/`liveIntervalMs` settings.
+- **Remote-execution spike** (`2a45c48`) — see `REMOTE-EXECUTION-SPIKE.md`.
+  Proves backend-executed nodes (ComfyUI direction) are possible **without
+  touching the synchronous graph engine**, by generalizing the http-fetch async
+  side-channel into a pluggable `ExecutionBackend`. Files:
+  `src/utils/remoteExecution.ts` (interface, `MockExecutionBackend`,
+  `dispatchRemote`, registry, `remoteCachedResult`) + store actions
+  `dispatchRemoteNode`/`cancelRemoteNode` (mirror `fetchNodeData`; stream
+  progress into `executionStates` with `AbortController` supersede/cancel) +
+  `src/test/remote-execution.test.ts` (14 tests).
 - **`CREATIVE-USE-CASES.md`** added — grounded use-case brainstorm + a prioritized
-  enhancement list (next picks: copy/export a node's computed value; a
-  presentation/"mini-app" view; `http-fetch` method/headers + CORS note; CSV
-  nodes; bundle code-splitting to clear the build warning).
+  enhancement list.
+
+### Key architecture facts learned this session (save re-discovery)
+- The execution engine is a **synchronous topological evaluation**
+  (`src/utils/execution.ts`); processors return values immediately, no async.
+- **Async nodes work via a side-channel:** the processor returns whatever is
+  cached on the node; an out-of-band store action does the async work, writes the
+  result back onto `node.data`, then calls `scheduleAutoExecute(() =>
+  executeGraph())` to re-run so the processor picks it up. `http-fetch`
+  (`fetchNodeData`) and now the remote spike both use this. `fetchNodeData` has
+  no in-tree caller — its auto-trigger wiring is effectively a stub.
+- **`PortType` is a fixed string union** (`src/types/index.ts`) — adding
+  `image`/`latent`/`model` is a code edit there. But the **plugin registry**
+  (`src/store/pluginStore.ts`) already allows runtime registration of node types
+  with arbitrary string port types + a (sync) processor — the extension seam.
+- Non-deterministic / always-re-execute node types are listed in
+  `executionOrchestration.ts` (~L404: `timer`, `http-fetch`, `get-var`, etc.).
 
 ## What was done this session (the revival)
 
@@ -57,20 +82,45 @@ failing tests. All fixed and pushed in commit `12e68a2`:
 
 ## Open items / next steps (priority order)
 
-### 1. Lint cleanup — ✅ DONE (session 2, `de24b10`)
-`npm run lint` → 0 problems. The whole backlog (no-explicit-any, react-refresh,
-no-unsafe-function-type, rules-of-hooks, and the remaining react-hooks/react-
-compiler readiness rules) is cleared, all refactored properly. Lint still isn't
-part of `build` (see Nice-to-haves) — add a CI/precommit gate to keep it at 0.
+### 1. Lint cleanup — ✅ DONE (`de24b10`)
+`npm run lint` → 0 problems, all refactored properly. Lint still isn't part of
+`build` — add a CI/precommit gate to keep it at 0 (see Nice-to-haves).
 
-### 2. Bundle code-splitting — NOT started
-Build warns: `three` (719 kB), `r3f` (522 kB), `index` (614 kB) chunks > 500 kB.
+### 2. Make the remote-execution spike tangible in the app — the natural next build
+The spike (`2a45c48`) proves the seam but isn't wired into the UI yet. To make it
+real (and demoable against the in-process `MockExecutionBackend`, no server
+needed), in rough order:
+- **A demo remote node type.** Easiest path is registering one via the plugin
+  registry (`registerPlugin` in `pluginStore.ts`) with `remoteCachedResult` as its
+  processor — avoids editing the `NodeType` union. Add it to a palette category so
+  it can be dropped on the canvas.
+- **Auto-dispatch wiring.** Decide *when* a remote node re-runs (dirty-input
+  detection) and call `dispatchRemoteNode(id)` — analogous to how `useLiveExecution`
+  drives re-execution. Today dispatch is an explicit call only.
+- **On-node progress UI.** Surface `node.data._remoteProgress` (0..1) on the node
+  while `executionStates[id] === 'running'` (a small bar, like the debug wave bar
+  in `ExecuteBar.tsx`).
+- Later: a real transport implementing `ExecutionBackend` (HTTP/WS; reuse
+  `serialization.ts`), media-handle ports + 3D image previews, a job queue, and
+  first-class `image`/`latent`/`model` port types. See `REMOTE-EXECUTION-SPIKE.md`.
+
+### 3. Other polish picks (from `CREATIVE-USE-CASES.md`)
+- **Copy/export a node's computed value** (JSON/CSV) — today only the *diagram*
+  exports to SVG; this makes calculators & ETL recipes deliver tangible output.
+- **Presentation / "mini-app" view** — hide wiring, surface only `source` inputs +
+  `display` outputs, so a finished graph reads as a clean tool.
+- **`http-fetch` ergonomics** — method/headers/body inputs + an in-app CORS note
+  (frontend-only fetch only reaches CORS-friendly endpoints).
+- **CSV in/out nodes** for the analyst use cases.
+
+### 4. Bundle code-splitting — NOT started
+Build warns: `three` (719 kB), `r3f` (522 kB), `index` (616 kB) chunks > 500 kB.
 Cosmetic, but worth `manualChunks` tuning in `vite.config.ts` if load time matters.
 
-### 3. Nice-to-haves observed
-- No CI. A GitHub Action running `npm run build && npm test` on push would catch
-  regressions like the ones fixed this session.
-- Lint isn't part of `build`, so lint errors accumulate silently.
+### 5. Nice-to-haves observed
+- No CI. A GitHub Action running `npm run build && npm test && npm run lint` on
+  push would catch regressions and keep lint at 0.
+- Lint isn't part of `build`, so lint errors can accumulate silently.
 
 ## Environment gotchas (read before starting)
 
