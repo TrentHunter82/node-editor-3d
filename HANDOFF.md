@@ -3,18 +3,19 @@
 Working notes for picking up where the last session left off. Not part of the app;
 safe to delete once the open items below are done.
 
-_Last updated: 2026-06-01 (session 3 — remote-exec wired into the app: demo node, on-node UI, auto-dispatch)_
+_Last updated: 2026-06-01 (session 3 — remote-exec wired into the app + live-browser verified; pushed)_
 
-## Current state (all green)
+## Current state (all green, pushed)
 
 - **Builds clean:** `npm run build` → exit 0 (only the cosmetic three.js/r3f
   chunk-size warning remains).
 - **Lint clean:** `npm run lint` → **0 problems**.
 - **All tests pass:** `npm test` → **9099/9099** (added `remote-node-integration.test.ts`, +4).
 - **Dev server runs:** `npm run dev` (port 5173, auto-increments if taken).
-- **`main` was last pushed at `c67a1de`** on `github.com/TrentHunter82/node-editor-3d`
-  over HTTPS. Session 3 work below is **in the working tree, NOT yet committed or
-  pushed** (see Session 3 section) — `git status` to review.
+- **`main` is pushed and up to date at `fa11737`** on
+  `github.com/TrentHunter82/node-editor-3d` over HTTPS. Session 3 added one commit
+  on top of `c67a1de`: `fa11737` (remote-exec wired into the app). Working tree is
+  clean.
 - See `CLAUDE.md` for architecture, commands, and conventions.
 
 ## Session 3 (2026-06-01): remote-execution made tangible in the app
@@ -42,9 +43,21 @@ demoable feature against the in-process `MockExecutionBackend` (no server needed
 - **Not yet done (the remaining production layers from the spike):** a real
   transport `ExecutionBackend` (HTTP/WS), rich-media handle ports + 3D previews, a
   job queue/concurrency limits, first-class `image`/`latent`/`model` port types.
-- **⚠️ Not visually verified in a live browser yet** — logic is covered by tests,
-  but dropping the node, wiring it, and watching the progress bar in the running app
-  is the next manual check.
+
+### Live-browser verification — PASS (done this session)
+Drove the running app in headless system Edge via Playwright (`channel: 'msedge'`;
+seeded `settings-v1` localStorage to skip the onboarding tour). The command palette
+(**Ctrl+Shift+P**, not Ctrl+F — that's the separate NodeSearchPanel) listed
+"Add Remote Compute (Plugin)"; the node dropped, rendered the Run button + progress
+bar, and clicking **Run remote** drove `MockExecutionBackend` to `status=ok`,
+`_remoteProgress=1`, `_remoteResult={0:0, 1:"computed remotely (remote-compute)"}`.
+With `autoExecute` on, the output ports also populated (`OUT0/OUT1/OUT2`). Three
+findings became the polish items below.
+
+**Verification gotchas worth keeping:** no Playwright/verifier in the repo (install
+`playwright --no-save`, drive `channel:'msedge'`); the app seeds a *starter graph*
+that sits in a fail-fast error state, so clear it (Ctrl+A, Delete) before checking
+full-graph execution; `window.__store` is exposed in DEV for reading store state.
 
 ## Session 2 (2026-05-31 → 06-01): lint backlog closed + Live Mode + remote-exec spike
 
@@ -113,14 +126,38 @@ failing tests. All fixed and pushed in commit `12e68a2`:
 `npm run lint` → 0 problems, all refactored properly. Lint still isn't part of
 `build` — add a CI/precommit gate to keep it at 0 (see Nice-to-haves).
 
-### 2. Make the remote-execution spike tangible in the app — ✅ DONE (session 3)
-The demo node, on-node UI, and auto-dispatch are built (see Session 3 above) and
-demoable against the in-process `MockExecutionBackend`. **Remaining production
-layers** (deferred from the spike): a real transport implementing `ExecutionBackend`
-(HTTP/WS; reuse `serialization.ts`), media-handle ports + 3D image previews, a job
-queue + concurrency limits, and first-class `image`/`latent`/`model` port types.
-See `REMOTE-EXECUTION-SPIKE.md`. Also worth a pass: let the node *body* color use
-the plugin def color (today `NodeModule` hardcodes teal for all plugin types).
+### 2. Make the remote-execution spike tangible in the app — ✅ DONE + verified (session 3)
+The demo node, on-node UI, and auto-dispatch are built and live-browser verified
+(see Session 3 above). **Quick polish picks the verification surfaced — start here
+if continuing remote-exec (small, high-value, all in `src/plugins/remoteDemo.ts` /
+`src/store/editorStore.ts`):**
+
+- **a) Make progress *visible*.** The demo backend uses `latencyMs: 0`, so a run
+  completes instantly — the bar snaps to 100% and the Cancel button never shows.
+  Give the registered demo backend a small latency for a real animation, e.g. in
+  `registerBuiltInPlugins`: `setExecutionBackend(new MockExecutionBackend({ latencyMs: 250, steps: 6 }))`.
+  (Heads-up: that's a *global* backend swap — fine for the demo, but a real build
+  wants per-node/per-type backends.)
+- **b) Outputs without `autoExecute`.** After dispatch, `dispatchRemoteNode` calls
+  `scheduleAutoExecute`, which **no-ops when `autoExecute` is off (the default)** —
+  so the node shows `status=ok` but its output *ports* stay empty (nothing feeds a
+  downstream `display`) until you toggle autoExecute or hit Execute. Consider having
+  `dispatchRemoteNode` write `nodeOutputs[id]` directly (or force a one-off
+  `executeGraph()`), so a remote node feeds the graph regardless of the setting.
+- **c)** `OutputReadout` renders the result port as `[object Object]` (payload is an
+  object). Minor — give remote results a readable summary.
+
+**Remaining production layers** (deferred from the spike): a real transport
+implementing `ExecutionBackend` (HTTP/WS; reuse `serialization.ts`), media-handle
+ports + 3D image previews, a job queue + concurrency limits, and first-class
+`image`/`latent`/`model` port types. See `REMOTE-EXECUTION-SPIKE.md`. Also worth a
+pass: let the node *body* color use the plugin def color (today `NodeModule`
+hardcodes teal for all plugin types).
+
+**Plugin-in-worker caveat:** plugin processors only run on the **main thread** —
+the Web Worker (`workerExecution`, default off) has an empty plugin registry, so
+plugin/remote node outputs won't populate if a user turns worker execution on.
+Pre-existing, affects all plugins; relevant once remote nodes feed the graph.
 
 ### 3. Other polish picks (from `CREATIVE-USE-CASES.md`)
 - **Copy/export a node's computed value** (JSON/CSV) — today only the *diagram*
