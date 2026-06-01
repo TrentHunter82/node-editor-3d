@@ -3,21 +3,48 @@
 Working notes for picking up where the last session left off. Not part of the app;
 safe to delete once the open items below are done.
 
-_Last updated: 2026-06-01 (session 2 — lint backlog closed, Live Mode, remote-exec spike; pushed)_
+_Last updated: 2026-06-01 (session 3 — remote-exec wired into the app: demo node, on-node UI, auto-dispatch)_
 
-## Current state (all green, pushed)
+## Current state (all green)
 
 - **Builds clean:** `npm run build` → exit 0 (only the cosmetic three.js/r3f
   chunk-size warning remains).
-- **Lint clean:** `npm run lint` → **0 problems** (was 16 errors + 29 warnings).
-- **All tests pass:** `npm test` → **9095/9095** (added `live-mode.test.ts` +
-  `remote-execution.test.ts`).
+- **Lint clean:** `npm run lint` → **0 problems**.
+- **All tests pass:** `npm test` → **9099/9099** (added `remote-node-integration.test.ts`, +4).
 - **Dev server runs:** `npm run dev` (port 5173, auto-increments if taken).
-- **`main` is pushed and up to date at `2a45c48`** (verified via `git ls-remote`)
-  on `github.com/TrentHunter82/node-editor-3d` over HTTPS. Session 2 added 4
-  commits on top of the revival's `12e68a2`: `de24b10` (lint), `0d86233` (Live
-  Mode + use-cases doc), `cd20bff` (handoff), `2a45c48` (remote-exec spike).
+- **`main` was last pushed at `c67a1de`** on `github.com/TrentHunter82/node-editor-3d`
+  over HTTPS. Session 3 work below is **in the working tree, NOT yet committed or
+  pushed** (see Session 3 section) — `git status` to review.
 - See `CLAUDE.md` for architecture, commands, and conventions.
+
+## Session 3 (2026-06-01): remote-execution made tangible in the app
+
+Built the natural next step from open-item #2 — the spike's seam is now a usable,
+demoable feature against the in-process `MockExecutionBackend` (no server needed).
+
+- **Demo remote node** (`src/plugins/remoteDemo.ts`): a `remote-compute` plugin
+  node (2 number inputs → result/status/error outputs) registered via the plugin
+  registry, with its type flagged remote (`registerRemoteNodeType`). Its processor
+  is `remoteCachedResult`, so it appears in every node palette automatically and
+  reads its cache like `http-fetch`. `registerBuiltInPlugins()` is the idempotent
+  bootstrap, called from an App mount effect.
+- **On-node UI** (`src/components/nodes/RemoteNodeExtras.tsx`): Run/Cancel button,
+  a live progress bar fed by `node.data._remoteProgress`, and a status/error line.
+  Wired into `NodeScreen.tsx` (renders when `isRemoteNodeType(node.type)`).
+- **Auto-dispatch** (`src/hooks/useRemoteAutoDispatch.ts`): edge-triggered — watches
+  each remote node's resolved-input signature and calls `dispatchRemoteNode` when it
+  changes. Skips the initial load batch, unwired nodes, and already-running nodes.
+  Mounted in App alongside `useLiveExecution`.
+- **Latent bug fixed:** `NodeScreen.tsx:482` did an unguarded
+  `NODE_TYPE_CONFIG[node.type].color` — would crash for *any* plugin node whose
+  screen renders (plugin types aren't in `NODE_TYPE_CONFIG`). Now falls back to the
+  plugin def's color then teal, mirroring `NodeModule`.
+- **Not yet done (the remaining production layers from the spike):** a real
+  transport `ExecutionBackend` (HTTP/WS), rich-media handle ports + 3D previews, a
+  job queue/concurrency limits, first-class `image`/`latent`/`model` port types.
+- **⚠️ Not visually verified in a live browser yet** — logic is covered by tests,
+  but dropping the node, wiring it, and watching the progress bar in the running app
+  is the next manual check.
 
 ## Session 2 (2026-05-31 → 06-01): lint backlog closed + Live Mode + remote-exec spike
 
@@ -86,23 +113,14 @@ failing tests. All fixed and pushed in commit `12e68a2`:
 `npm run lint` → 0 problems, all refactored properly. Lint still isn't part of
 `build` — add a CI/precommit gate to keep it at 0 (see Nice-to-haves).
 
-### 2. Make the remote-execution spike tangible in the app — the natural next build
-The spike (`2a45c48`) proves the seam but isn't wired into the UI yet. To make it
-real (and demoable against the in-process `MockExecutionBackend`, no server
-needed), in rough order:
-- **A demo remote node type.** Easiest path is registering one via the plugin
-  registry (`registerPlugin` in `pluginStore.ts`) with `remoteCachedResult` as its
-  processor — avoids editing the `NodeType` union. Add it to a palette category so
-  it can be dropped on the canvas.
-- **Auto-dispatch wiring.** Decide *when* a remote node re-runs (dirty-input
-  detection) and call `dispatchRemoteNode(id)` — analogous to how `useLiveExecution`
-  drives re-execution. Today dispatch is an explicit call only.
-- **On-node progress UI.** Surface `node.data._remoteProgress` (0..1) on the node
-  while `executionStates[id] === 'running'` (a small bar, like the debug wave bar
-  in `ExecuteBar.tsx`).
-- Later: a real transport implementing `ExecutionBackend` (HTTP/WS; reuse
-  `serialization.ts`), media-handle ports + 3D image previews, a job queue, and
-  first-class `image`/`latent`/`model` port types. See `REMOTE-EXECUTION-SPIKE.md`.
+### 2. Make the remote-execution spike tangible in the app — ✅ DONE (session 3)
+The demo node, on-node UI, and auto-dispatch are built (see Session 3 above) and
+demoable against the in-process `MockExecutionBackend`. **Remaining production
+layers** (deferred from the spike): a real transport implementing `ExecutionBackend`
+(HTTP/WS; reuse `serialization.ts`), media-handle ports + 3D image previews, a job
+queue + concurrency limits, and first-class `image`/`latent`/`model` port types.
+See `REMOTE-EXECUTION-SPIKE.md`. Also worth a pass: let the node *body* color use
+the plugin def color (today `NodeModule` hardcodes teal for all plugin types).
 
 ### 3. Other polish picks (from `CREATIVE-USE-CASES.md`)
 - **Copy/export a node's computed value** (JSON/CSV) — today only the *diagram*

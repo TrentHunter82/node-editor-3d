@@ -38,6 +38,8 @@ import { useSettingsStore } from './store/settingsStore';
 import { isOnUIPanel } from './utils/uiDetection';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useLiveExecution } from './hooks/useLiveExecution';
+import { useRemoteAutoDispatch } from './hooks/useRemoteAutoDispatch';
+import { registerBuiltInPlugins } from './plugins/remoteDemo';
 
 // Lazy-loaded panels (only loaded when first opened)
 const FindReplacePanel = lazy(() => import('./components/ui/FindReplacePanel').then(m => ({ default: m.FindReplacePanel })));
@@ -280,6 +282,12 @@ export default function App() {
 
   // Live Mode: re-execute the graph on an interval (drives timer/http-fetch)
   useLiveExecution();
+
+  // Register built-in plugins (the demo remote-compute node) once on mount.
+  useEffect(() => { registerBuiltInPlugins(); }, []);
+
+  // Auto-dispatch remote-executed nodes when their inputs change.
+  useRemoteAutoDispatch();
 
   // Safety net: reset interaction state on window blur — prevents stuck
   // drag/selection when the user switches tabs or clicks outside the browser.

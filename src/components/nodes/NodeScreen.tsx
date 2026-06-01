@@ -7,6 +7,9 @@ import type { EditorNode, ExecutionState } from '../../types';
 import { NODE_TYPE_CONFIG, PORT_TYPE_COLORS } from '../../types';
 import { DEFAULT_NODE_WIDTH } from '../../store/slices/nodeSlice';
 import { OutputReadout, DisplayReadout, ScrubLabel, ConnectionDots } from './ScreenExtras';
+import { RemoteNodeExtras } from './RemoteNodeExtras';
+import { getPluginDef } from '../../store/pluginStore';
+import { isRemoteNodeType } from '../../utils/remoteExecution';
 import { NODE_SCREEN_FIELDS, FIELD_TYPE_TO_PORT } from './nodeFields';
 import type { FieldDef, FieldType } from './nodeFields';
 import { isScreenOccluded } from '../../utils/nodeBodyRegistry';
@@ -477,9 +480,11 @@ export const NodeScreen = memo(function NodeScreen({ node, currentH, nodeW, node
   const execState = useEditorStore(s => s.executionStates[node.id]) as ExecutionState | undefined;
   const execError = useEditorStore(s => s.executionErrors[node.id]) as string | undefined;
 
-  // Resolve accent color from node type
+  // Resolve accent color from node type. Plugin types aren't in NODE_TYPE_CONFIG,
+  // so fall back to the plugin def's color (then teal) — mirrors NodeModule and
+  // avoids a crash when a plugin node renders its screen.
   const accentHex = useMemo(() => {
-    const colorKey = NODE_TYPE_CONFIG[node.type].color;
+    const colorKey = NODE_TYPE_CONFIG[node.type]?.color ?? getPluginDef(node.type)?.color ?? 'teal';
     return ACCENT_HEX[colorKey] ?? ACCENT_HEX.teal;
   }, [node.type]);
 
@@ -571,8 +576,9 @@ export const NodeScreen = memo(function NodeScreen({ node, currentH, nodeW, node
   });
 
   const isCustom = node.type === 'custom';
+  const isRemote = isRemoteNodeType(node.type);
 
-  if (fields.length === 0 && !isCustom) return null;
+  if (fields.length === 0 && !isCustom && !isRemote) return null;
 
   return (
     <group ref={screenGroupRef} position={[0, currentH / 2 + 0.005, 0]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -629,6 +635,11 @@ export const NodeScreen = memo(function NodeScreen({ node, currentH, nodeW, node
                 labelStyle={labelStyle}
                 accentHex={accentHex}
               />
+            </div>
+          )}
+          {isRemote && (
+            <div {...STOP_PROPAGATION_HANDLERS} style={{ pointerEvents: 'auto' }}>
+              <RemoteNodeExtras nodeId={node.id} accentHex={accentHex} />
             </div>
           )}
           {/* Section separator + outputs (or display readout for display nodes) */}
