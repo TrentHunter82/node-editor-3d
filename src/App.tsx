@@ -36,6 +36,7 @@ import { PanelToggleBar } from './components/ui/PanelToggleBar';
 import { useEditorStore } from './store/editorStore';
 import { useSettingsStore } from './store/settingsStore';
 import { isOnUIPanel } from './utils/uiDetection';
+import { seedStarterGraph } from './utils/starterGraph';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useLiveExecution } from './hooks/useLiveExecution';
 import { useRemoteAutoDispatch } from './hooks/useRemoteAutoDispatch';
@@ -180,10 +181,7 @@ export default function App() {
     const store = useEditorStore.getState();
     store.loadFromStorageAsync().then((loaded) => {
       if (!loaded) {
-        store.addNode('source', [0, 0, 0]);
-        store.addNode('transform', [3, 0, 0]);
-        store.addNode('filter', [6, 0, 0]);
-        store.addNode('output', [9, 0, 0]);
+        seedStarterGraph(store);
       }
     });
   }, []);

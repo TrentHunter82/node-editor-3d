@@ -1128,7 +1128,13 @@ export const useEditorStore = create<EditorState>()(
           for (let i = 0; i < node.inputs.length; i++) {
             const key = `${node.id}:${i}`;
             if (!connectedInputs.has(key)) {
-              nodeErrors.push(`Input "${node.inputs[i].label}" is not connected`);
+              // An input with a defaultValue still produces sensible output when
+              // unconnected, so it's a warning; only default-less inputs are errors.
+              nodeErrors.push(
+                node.inputs[i].defaultValue !== undefined
+                  ? `Input "${node.inputs[i].label}" is not connected — using default (warning)`
+                  : `Input "${node.inputs[i].label}" is not connected`,
+              );
             }
           }
 
