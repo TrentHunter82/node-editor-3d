@@ -839,6 +839,22 @@ describe('Material cache — shared instances', () => {
     expect(_getCacheSizes().geometries).toBe(2);
   });
 
+  it('quantizes near-identical dimensions to the same geometry', () => {
+    const g1 = getCachedRoundedBoxGeo(1.6, 0.5, 0.8, 4, 0.09);
+    const g2 = getCachedRoundedBoxGeo(1.61, 0.503, 0.79, 4, 0.09);
+    expect(g1).toBe(g2);
+  });
+
+  it('a continuous resize drag mints a bounded number of geometries', () => {
+    _resetMaterialCache();
+    // Simulate a drag sweeping width 1.6 → 2.1 in 1000 float increments
+    for (let i = 0; i <= 1000; i++) {
+      getCachedRoundedBoxGeo(1.6 + (i * 0.5) / 1000, 0.5, 0.8, 4, 0.09);
+    }
+    // 0.5 range / 0.05 step ≈ 11 quantized sizes — not 1000 cache entries
+    expect(_getCacheSizes().geometries).toBeLessThanOrEqual(12);
+  });
+
   it('handles many unique materials efficiently', () => {
     for (let i = 0; i < 100; i++) {
       getCachedBasicMaterial(`#${i.toString(16).padStart(6, '0')}`, 0.5, true, false);

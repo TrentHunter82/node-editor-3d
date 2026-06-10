@@ -42,8 +42,21 @@ export function getCachedBasicMaterial(
 const geoCache = new Map<string, RoundedBoxGeometry>();
 
 /**
- * Returns a shared RoundedBoxGeometry instance for the given dimensions.
- * Callers must NOT dispose the returned geometry.
+ * Quantization step for cached geometry dimensions. Without this, a live
+ * resize drag mints a unique RoundedBoxGeometry for every float dimension it
+ * passes through (hundreds per drag, cached forever → VRAM bloat). 0.05 world
+ * units is imperceptible next to port positions computed from exact dims
+ * (max visual delta 0.025).
+ */
+const GEO_DIM_STEP = 0.05;
+
+function quantizeDim(v: number): number {
+  return Math.max(GEO_DIM_STEP, Math.round(v / GEO_DIM_STEP) * GEO_DIM_STEP);
+}
+
+/**
+ * Returns a shared RoundedBoxGeometry instance for the given dimensions
+ * (quantized to GEO_DIM_STEP). Callers must NOT dispose the returned geometry.
  */
 export function getCachedRoundedBoxGeo(
   w: number,
@@ -52,10 +65,13 @@ export function getCachedRoundedBoxGeo(
   segments: number,
   radius: number,
 ): RoundedBoxGeometry {
-  const key = `${w}|${h}|${d}|${segments}|${radius}`;
+  const qw = quantizeDim(w);
+  const qh = quantizeDim(h);
+  const qd = quantizeDim(d);
+  const key = `${qw}|${qh}|${qd}|${segments}|${radius}`;
   let geo = geoCache.get(key);
   if (!geo) {
-    geo = new RoundedBoxGeometry(w, h, d, segments, radius);
+    geo = new RoundedBoxGeometry(qw, qh, qd, segments, radius);
     geoCache.set(key, geo);
   }
   return geo;
