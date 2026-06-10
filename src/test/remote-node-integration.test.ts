@@ -10,6 +10,7 @@ import {
 } from '../store/pluginStore';
 import { isRemoteNodeType, _resetRemoteExecution } from '../utils/remoteExecution';
 import { registerBuiltInPlugins, REMOTE_COMPUTE_TYPE } from '../plugins/remoteDemo';
+import { useSettingsStore } from '../store/settingsStore';
 import type { NodeType } from '../types';
 
 enableMapSet();
@@ -111,5 +112,34 @@ describe('remoteDemo — end-to-end dispatch through the store', () => {
     const out = processor(node as never, { 0: 21 });
     expect((out[0] as Record<number, unknown>)[0]).toBe(21); // mock sums numeric inputs
     expect(out[1]).toBe('ok');
+  });
+});
+
+describe('worker execution with plugin nodes', () => {
+  beforeEach(resetAll);
+  afterEach(() => {
+    useSettingsStore.getState().setWorkerExecution(false);
+    resetAll();
+  });
+
+  it('falls back to main-thread execution so plugin processors still run', () => {
+    registerBuiltInPlugins();
+    useSettingsStore.getState().setWorkerExecution(true);
+
+    const id = useEditorStore.getState().addNode(REMOTE_COMPUTE_TYPE as NodeType, [0, 0, 0]);
+    // Seed a cached remote result so the plugin processor has something to surface
+    useEditorStore.setState((s) => {
+      s.nodes[id].data._remoteResult = { 0: 42 };
+      s.nodes[id].data._remoteStatus = 'ok';
+    });
+
+    // With the empty-registry worker this would produce no outputs for the
+    // plugin node; the fallback executes on the main thread synchronously.
+    useEditorStore.getState().executeGraph();
+
+    const outputs = useEditorStore.getState().nodeOutputs[id];
+    expect(outputs).toBeDefined();
+    expect((outputs[0] as Record<number, unknown>)[0]).toBe(42);
+    expect(outputs[1]).toBe('ok');
   });
 });

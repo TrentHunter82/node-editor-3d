@@ -12,6 +12,7 @@ import { executeInWorker, checkWorkerHealth } from '../../workers/executionWorke
 import type { ExecuteResultMessage } from '../../workers/execution.worker';
 import { getUpstreamPath } from '../../utils/profiling';
 import { useSettingsStore } from '../settingsStore';
+import { isPluginType } from '../pluginStore';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -782,7 +783,15 @@ export function createExecutionActions(
       // ---------------------------------------------------------------
       // Check whether to use Worker execution
       // ---------------------------------------------------------------
-      const useWorker = getWorkerEnabled();
+      // Plugin processors are closures registered at runtime — they can't be
+      // serialized to the Worker, whose registry is empty. Running a graph
+      // with plugin nodes in the Worker would silently produce no outputs
+      // for them, so such graphs always execute on the main thread.
+      const hasPluginNodes = Object.values(state.nodes).some(n => isPluginType(n.type));
+      const useWorker = getWorkerEnabled() && !hasPluginNodes;
+      if (getWorkerEnabled() && hasPluginNodes) {
+        console.info('[node-editor-3d] Graph contains plugin nodes — executing on the main thread (plugin processors are not available in the worker).');
+      }
 
       if (useWorker) {
         // ----- Worker path (async, off main thread) -----
