@@ -1,6 +1,7 @@
 import { openDB } from 'idb';
 import type { IDBPDatabase } from 'idb';
 import type { EditorNode, Connection, NodeGroup, CustomNodeDef, GraphData, GraphTab, NodeTemplate, SubgraphNodeDef } from '../types';
+import { migrateStorageToCurrent, CURRENT_STORAGE_VERSION } from './storageMigrations';
 
 const STORAGE_KEY = 'node-editor-3d-graph';
 const IDB_NAME = 'node-editor-3d';
@@ -130,10 +131,24 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
 
 /**
  * Normalize and validate a raw multi-graph data object.
- * Shared between sync and async load paths.
+ * Shared between sync and async load paths. Runs the formal migration
+ * chain first (see utils/storageMigrations.ts), then hardens the
+ * current-version payload against missing/corrupt fields.
  */
-function normalizeMultiGraphData(data: unknown): MultiGraphStorage | null {
-  if (!isPlainObject(data)) return null;
+function normalizeMultiGraphData(raw: unknown): MultiGraphStorage | null {
+  const outcome = migrateStorageToCurrent(raw);
+  if (outcome.error === 'future-version') {
+    console.error(
+      `[node-editor-3d] Saved workspace is version ${outcome.fromVersion}, but this app only understands up to ${CURRENT_STORAGE_VERSION}. ` +
+      'The data was left untouched — update the app to load it.',
+    );
+    return null;
+  }
+  if (!outcome.data) return null;
+  if (outcome.applied.length > 0) {
+    console.info(`[node-editor-3d] Migrated saved workspace: ${outcome.applied.join(' → ')}`);
+  }
+  const data = outcome.data;
 
   // Check for v2 multi-graph format
   if (data.version === 2 && isPlainObject(data.graphs) && isPlainObject(data.graphTabs)) {
@@ -179,11 +194,6 @@ function normalizeMultiGraphData(data: unknown): MultiGraphStorage | null {
     return data as unknown as MultiGraphStorage;
   }
 
-  // Legacy format migration: wrap single graph into multi-graph
-  if (isPlainObject(data.nodes) && isPlainObject(data.connections)) {
-    return migrateLegacyToMultiGraph(data as unknown as LegacyGraphData);
-  }
-
   return null;
 }
 
@@ -201,29 +211,6 @@ export function loadMultiGraph(): MultiGraphStorage | null {
     console.warn('[node-editor-3d] Failed to load saved graph:', e);
     return null;
   }
-}
-
-/** Migrate legacy single-graph data to multi-graph format */
-function migrateLegacyToMultiGraph(legacy: LegacyGraphData): MultiGraphStorage {
-  const graphId = 'default';
-  return {
-    version: 2,
-    graphs: {
-      [graphId]: {
-        nodes: legacy.nodes,
-        connections: legacy.connections,
-        groups: legacy.groups ?? {},
-        customNodeDefs: legacy.customNodeDefs ?? {},
-        subgraphDefs: legacy.subgraphDefs ?? {},
-      },
-    },
-    graphTabs: {
-      [graphId]: { id: graphId, name: 'Main', createdAt: Date.now() },
-    },
-    activeGraphId: graphId,
-    graphOrder: [graphId],
-    templates: {},
-  };
 }
 
 // --- Legacy API (kept for backward compatibility with tests) ---
