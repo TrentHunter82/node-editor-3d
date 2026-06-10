@@ -1,5 +1,6 @@
 import { useRef, useState, useMemo, useCallback, useEffect, memo } from 'react';
 import { Html, Text } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
 import { useSpring, animated, to } from '@react-spring/three';
 import * as THREE from 'three';
 import type { Group } from 'three';
@@ -36,6 +37,14 @@ const COLOR_MAP: Record<string, MatcapName> = {
 
 // Node body dimensions
 const NODE_H = 0.5;
+
+/**
+ * Camera distance² beyond which NodeScreen Html overlays unmount.
+ * Each screen is a separate DOM/React render pass — the single biggest
+ * per-node cost at scale. Screens are unreadable past ~18 units anyway;
+ * selected nodes keep their screens regardless of distance.
+ */
+const SCREEN_DISTANCE_SQ = 18 * 18;
 
 // Shared geometry for breakpoint indicator
 const BREAKPOINT_SPHERE_GEO = new THREE.SphereGeometry(0.06, 12, 12);
@@ -113,6 +122,22 @@ export const NodeModule = memo(function NodeModule({ node, selected, onSelect, t
       }
     };
   }, []);
+
+  // Screen proximity: NodeScreen Html overlays only mount within
+  // SCREEN_DISTANCE of the camera. State flips only on threshold crossings,
+  // so the per-frame cost is a few float ops per node.
+  const screenNearRef = useRef(true);
+  const [screenNear, setScreenNear] = useState(true);
+  useFrame(({ camera }) => {
+    const dx = node.position[0] - camera.position.x;
+    const dy = node.position[1] - camera.position.y;
+    const dz = node.position[2] - camera.position.z;
+    const near = dx * dx + dy * dy + dz * dz <= SCREEN_DISTANCE_SQ;
+    if (near !== screenNearRef.current) {
+      screenNearRef.current = near;
+      setScreenNear(near);
+    }
+  });
 
   const handleDoubleClick = useCallback((e: { stopPropagation(): void }) => {
     e.stopPropagation();
@@ -490,13 +515,13 @@ export const NodeModule = memo(function NodeModule({ node, selected, onSelect, t
         </Html>
       )}
 
-      {/* NodeScreen editing panel — shown always when showNodeScreens is on, or when selected */}
-      {!isCollapsed && (showNodeScreens || selected) && (
+      {/* NodeScreen editing panel — near nodes when showNodeScreens is on, selected nodes always */}
+      {!isCollapsed && ((showNodeScreens && screenNear) || selected) && (
         <NodeScreen node={node} currentH={currentH} nodeW={nodeW} nodeD={nodeD} />
       )}
 
-      {/* Inline value overlay on node face — fallback when NodeScreen is hidden */}
-      {!isCollapsed && !showNodeScreens && !selected && (
+      {/* Inline value overlay on node face — fallback when NodeScreen is hidden (near nodes only) */}
+      {!isCollapsed && !showNodeScreens && !selected && screenNear && (
         <InlineValueOverlay node={node} currentH={currentH} />
       )}
 
