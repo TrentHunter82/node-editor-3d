@@ -109,9 +109,9 @@ describe('node help system', () => {
     expect(help!.outputs.length).toBeGreaterThan(0);
   });
 
-  it('returns help for all 93 node types', () => {
+  it('returns help for all 94 node types', () => {
     const all = getAllNodeHelp();
-    expect(all.length).toBe(93);
+    expect(all.length).toBe(94);
   });
 
   it('returns undefined for unknown type', () => {

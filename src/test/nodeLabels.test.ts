@@ -35,7 +35,7 @@ const ALL_NODE_TYPES: NodeType[] = [
   'compose-vec3', 'decompose-vec3',
   'dot-product', 'cross-product', 'normalize-vec3', 'vec3-length',
   'mean', 'median', 'stddev', 'min-array', 'max-array',
-  'note', 'reroute', 'random', 'display',
+  'note', 'reroute', 'random', 'display', 'image-preview',
   'timer', 'color-picker', 'color-mix', 'hsl-to-rgb', 'rgb-to-hsl', 'http-fetch',
   'create-array', 'get-element', 'set-element', 'array-length', 'array-push',
   'array-filter', 'array-map', 'array-reduce',
@@ -222,8 +222,8 @@ describe('Node label consistency across modules', () => {
     }
   });
 
-  it('ALL_NODE_TYPES matches the count in modularity test (93 types)', () => {
-    expect(ALL_NODE_TYPES.length).toBe(93);
+  it('ALL_NODE_TYPES matches the count in modularity test (94 types)', () => {
+    expect(ALL_NODE_TYPES.length).toBe(94);
   });
 
   it('no duplicate types in ALL_NODE_TYPES', () => {

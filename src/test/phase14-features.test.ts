@@ -94,7 +94,7 @@ const ALL_NODE_TYPES: NodeType[] = [
   'compose-vec3', 'decompose-vec3',
   'dot-product', 'cross-product', 'normalize-vec3', 'vec3-length',
   'mean', 'median', 'stddev', 'min-array', 'max-array',
-  'note', 'reroute', 'random', 'display',
+  'note', 'reroute', 'random', 'display', 'image-preview',
   'timer', 'color-picker', 'color-mix', 'hsl-to-rgb', 'rgb-to-hsl', 'http-fetch',
   'custom',
   'subgraph', 'subgraph-input', 'subgraph-output',
@@ -109,7 +109,7 @@ const ALL_NODE_TYPES: NodeType[] = [
 ];
 
 /** Actual count of node types defined in the codebase */
-const NODE_TYPE_COUNT = 93;
+const NODE_TYPE_COUNT = 94;
 
 // =========================================================================
 // 1. Recent Files (settingsStore)
@@ -276,7 +276,7 @@ describe('NODE_CATEGORIES', () => {
   });
 
   it('Utility category contains note, reroute, random, display, custom, and date/time nodes', () => {
-    const expected: NodeType[] = ['note', 'reroute', 'random', 'display', 'custom', 'get-timestamp', 'format-date', 'parse-date'];
+    const expected: NodeType[] = ['note', 'reroute', 'random', 'display', 'image-preview', 'custom', 'get-timestamp', 'format-date', 'parse-date'];
     const cats = getCategoryTypes();
     for (const t of expected) {
       expect(cats['Utility']).toContain(t);
@@ -293,7 +293,7 @@ describe('NODE_CATEGORIES', () => {
     expect(cats['Subgraph']).toHaveLength(expected.length);
   });
 
-  it('all categories combined cover all 93 node types', () => {
+  it('all categories combined cover all 94 node types', () => {
     const allCategorized = Object.keys(NODE_CATEGORIES) as NodeType[];
     expect(allCategorized).toHaveLength(NODE_TYPE_COUNT);
     for (const t of ALL_NODE_TYPES) {
@@ -325,7 +325,7 @@ describe('NODE_CATEGORIES', () => {
 // =========================================================================
 
 describe('NODE_TYPE_CONFIG', () => {
-  it('has entries for all 93 node types', () => {
+  it('has entries for all 94 node types', () => {
     const configKeys = Object.keys(NODE_TYPE_CONFIG) as NodeType[];
     expect(configKeys).toHaveLength(NODE_TYPE_COUNT);
     for (const t of ALL_NODE_TYPES) {

@@ -1068,6 +1068,7 @@ describe('Node Type Diversity', () => {
       reroute: { inputs: 1, outputs: 1 },
       random: { inputs: 0, outputs: 1 },
       display: { inputs: 1, outputs: 0 },
+      'image-preview': { inputs: 1, outputs: 1 },
       custom: { inputs: 0, outputs: 0 },   // Empty by default; set via definition
       subgraph: { inputs: 0, outputs: 0 }, // Empty by default; set via definition
       'subgraph-input': { inputs: 0, outputs: 1 },

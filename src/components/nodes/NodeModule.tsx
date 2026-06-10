@@ -24,6 +24,7 @@ import { InlineValueOverlay } from './NodeInlineOverlay';
 import { FadingDiffHighlight, SelectionPulse, SubgraphFrame, ElevationIndicator } from './NodeEffects';
 import { getCachedBasicMaterial, getCachedRoundedBoxGeo } from '../../utils/materialCache';
 import { getBodyRef, removeBodyRef } from '../../utils/nodeBodyRegistry';
+import { NodeImagePreview } from './NodeImagePreview';
 
 
 const COLOR_MAP: Record<string, MatcapName> = {
@@ -508,6 +509,9 @@ export const NodeModule = memo(function NodeModule({ node, selected, onSelect, t
       {node.position[1] > 0.01 && (
         <ElevationIndicator height={node.position[1]} />
       )}
+
+      {/* Image output preview — floats the generated image above the node */}
+      {!isCollapsed && <NodeImagePreview node={node} nodeW={nodeW} />}
     </animated.group>
   );
 });

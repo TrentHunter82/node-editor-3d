@@ -58,7 +58,7 @@ function resetStore() {
   });
 }
 
-const VALID_PORT_TYPES = new Set(['number', 'string', 'boolean', 'color', 'vector3', 'array', 'object', 'any']);
+const VALID_PORT_TYPES = new Set(['number', 'string', 'boolean', 'color', 'vector3', 'array', 'object', 'image', 'any']);
 
 // ===========================================================================
 // 1. NODE_TYPE_CONFIG schema verification (6 tests)

@@ -345,7 +345,7 @@ describe('execution + undo/redo integration', () => {
 describe('NODE_TYPE_CONFIG completeness', () => {
   it('all 93 node types have configs', () => {
     const configCount = Object.keys(NODE_TYPE_CONFIG).length;
-    expect(configCount).toBe(93);
+    expect(configCount).toBe(94);
   });
 
   it('every config has inputs and outputs arrays', () => {

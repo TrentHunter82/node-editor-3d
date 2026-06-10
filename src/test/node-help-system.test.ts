@@ -23,7 +23,7 @@ const ALL_NODE_TYPES: NodeType[] = [
   'compose-vec3', 'decompose-vec3',
   'dot-product', 'cross-product', 'normalize-vec3', 'vec3-length',
   'mean', 'median', 'stddev', 'min-array', 'max-array',
-  'note', 'reroute', 'random', 'display',
+  'note', 'reroute', 'random', 'display', 'image-preview',
   'timer', 'color-picker', 'color-mix', 'hsl-to-rgb', 'rgb-to-hsl', 'http-fetch',
   'create-array', 'get-element', 'set-element', 'array-length', 'array-push', 'array-filter', 'array-map', 'array-reduce',
   'create-object', 'get-property', 'set-property', 'object-keys', 'object-values', 'merge-objects',
@@ -42,9 +42,9 @@ const ALL_NODE_TYPES: NodeType[] = [
 // ---------------------------------------------------------------------------
 
 describe('node help completeness', () => {
-  it('has help entries for all 93 node types', () => {
+  it('has help entries for all 94 node types', () => {
     const all = getAllNodeHelp();
-    expect(all.length).toBe(93);
+    expect(all.length).toBe(94);
   });
 
   it('every node type in NodeType union has a help entry', () => {
@@ -144,7 +144,7 @@ describe('node help port accuracy', () => {
   });
 
   it('every port help has a valid type string', () => {
-    const validTypes = new Set(['number', 'string', 'boolean', 'vector3', 'color', 'any', 'array', 'object']);
+    const validTypes = new Set(['number', 'string', 'boolean', 'vector3', 'color', 'any', 'array', 'object', 'image']);
     for (const entry of getAllNodeHelp()) {
       for (const port of [...entry.inputs, ...entry.outputs]) {
         expect(validTypes.has(port.type), `${entry.nodeType}.${port.name} type="${port.type}"`).toBe(true);

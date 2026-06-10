@@ -443,7 +443,7 @@ describe('Force layout', () => {
 describe('NODE_TYPE_CONFIG completeness', () => {
   it('all 93 node types have valid inputs/outputs arrays', () => {
     const configCount = Object.keys(NODE_TYPE_CONFIG).length;
-    expect(configCount).toBe(93);
+    expect(configCount).toBe(94);
 
     for (const [type, config] of Object.entries(NODE_TYPE_CONFIG)) {
       expect(Array.isArray(config.inputs), `${type} inputs should be an array`).toBe(true);

@@ -243,7 +243,7 @@ describe('node help + execution correctness', () => {
 
   it('all 93 node types have help entries (getAllNodeHelp().length === 93)', () => {
     const all = getAllNodeHelp();
-    expect(all.length).toBe(93);
+    expect(all.length).toBe(94);
   });
 
   it('help categories sum equals total: no orphans or duplicates in count', () => {

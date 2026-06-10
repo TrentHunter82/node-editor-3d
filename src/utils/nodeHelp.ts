@@ -826,6 +826,24 @@ const NODE_HELP: Record<string, NodeHelpEntry> = {
     ],
   },
 
+  'image-preview': {
+    nodeType: 'image-preview',
+    category: 'Utility',
+    summary: 'Shows an image from a URL as a floating preview plane in the 3D scene.',
+    description:
+      'Takes an image URL (from a ComfyUI Workflow node, an http-fetch result, or any string) and renders the image on a billboard plane above the node. The URL passes through to the output so further nodes can use it.',
+    inputs: [
+      { name: 'url', type: 'image', description: 'Image URL to preview. String ports connect here too.' },
+    ],
+    outputs: [
+      { name: 'image', type: 'image', description: 'The same URL, passed through.' },
+    ],
+    tips: [
+      'Wire the image output of a ComfyUI Workflow node here to see generations in the graph.',
+      'The image loads with CORS enabled — the serving host must allow cross-origin requests.',
+    ],
+  },
+
   random: {
     nodeType: 'random',
     category: 'Utility',

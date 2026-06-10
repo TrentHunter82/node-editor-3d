@@ -10,7 +10,7 @@ export type NodeType =
   | 'compose-vec3' | 'decompose-vec3'
   | 'dot-product' | 'cross-product' | 'normalize-vec3' | 'vec3-length'
   | 'mean' | 'median' | 'stddev' | 'min-array' | 'max-array'
-  | 'note' | 'reroute' | 'random' | 'display'
+  | 'note' | 'reroute' | 'random' | 'display' | 'image-preview'
   | 'timer' | 'color-picker' | 'color-mix' | 'hsl-to-rgb' | 'rgb-to-hsl' | 'http-fetch'
   | 'create-array' | 'get-element' | 'set-element' | 'array-length' | 'array-push' | 'array-filter' | 'array-map' | 'array-reduce'
   | 'create-object' | 'get-property' | 'set-property' | 'object-keys' | 'object-values' | 'merge-objects'
@@ -306,7 +306,7 @@ export const NODE_CATEGORIES: Record<NodeType, NodeCategory> = {
   'compose-vec3': 'Vector', 'decompose-vec3': 'Vector',
   'dot-product': 'Vector', 'cross-product': 'Vector', 'normalize-vec3': 'Vector', 'vec3-length': 'Vector',
   mean: 'Math', median: 'Math', stddev: 'Math', 'min-array': 'Math', 'max-array': 'Math',
-  note: 'Utility', reroute: 'Utility', random: 'Utility', display: 'Utility',
+  note: 'Utility', reroute: 'Utility', random: 'Utility', display: 'Utility', 'image-preview': 'Utility',
   timer: 'Live', 'http-fetch': 'Live',
   'color-picker': 'Color', 'color-mix': 'Color', 'hsl-to-rgb': 'Color', 'rgb-to-hsl': 'Color',
   'create-array': 'Data', 'get-element': 'Data', 'set-element': 'Data',
@@ -784,6 +784,16 @@ export const NODE_TYPE_CONFIG: Record<
   },
 
   // --- Data (array manipulation + variables) ---
+  'image-preview': {
+    color: 'coral',
+    inputs: [
+      { label: 'url', portType: 'image', description: 'Image URL to preview (image or string)', defaultValue: '' },
+    ],
+    outputs: [
+      { label: 'image', portType: 'image', description: 'The same URL, passed through (preview renders above the node)' },
+    ],
+  },
+
   'create-array': {
     color: 'teal-coral',
     inputs: [

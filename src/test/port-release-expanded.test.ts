@@ -325,7 +325,7 @@ describe('All 93 types iteration', () => {
 
   it('NODE_TYPE_CONFIG has exactly 93 entries', () => {
     const count = Object.keys(NODE_TYPE_CONFIG).length;
-    expect(count).toBe(93);
+    expect(count).toBe(94);
   });
 });
 

@@ -331,6 +331,12 @@ export const processors: Record<NodeType, NodeProcessor> = {
     return {};
   },
 
+  'image-preview': (_node, inputs) => {
+    // Pass the URL through; the 3D preview plane renders from the output port.
+    const url = typeof inputs[0] === 'string' && inputs[0].length > 0 ? inputs[0] : null;
+    return { 0: url };
+  },
+
   // --- Subgraph ---
   // The subgraph processor is a placeholder — actual subgraph execution is handled
   // by executeSubgraphNode() which is called from executeGraph when context is provided.
