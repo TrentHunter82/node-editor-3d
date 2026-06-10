@@ -72,23 +72,26 @@ beforeEach(() => {
 // ===========================================================================
 
 describe('takeSnapshot', () => {
-  it('creates a deep clone of state', () => {
+  it('captures state by reference (immer state is immutable once finalized)', () => {
     const state = makeState();
     const snap = takeSnapshot(state);
 
     expect(snap.nodes).toEqual(state.nodes);
     expect(snap.connections).toEqual(state.connections);
-    // Verify deep clone (not same reference)
-    expect(snap.nodes).not.toBe(state.nodes);
-    expect(snap.connections).not.toBe(state.connections);
+    // The store is immer-managed with autoFreeze: finalized state never
+    // mutates in place, so snapshots share references — O(1) per action
+    // instead of structuredClone of the whole graph.
+    expect(snap.nodes).toBe(state.nodes);
+    expect(snap.connections).toBe(state.connections);
   });
 
-  it('does not share node references between snapshot and original', () => {
+  it('is unaffected by copy-on-write updates (the real store mutation model)', () => {
     const state = makeState();
     const snap = takeSnapshot(state);
 
-    // Mutate original
-    state.nodes.n1.title = 'CHANGED';
+    // Immer-style update: replaces the record and the changed node object,
+    // never mutating the originals in place.
+    state.nodes = { ...state.nodes, n1: { ...state.nodes.n1, title: 'CHANGED' } };
     expect(snap.nodes.n1.title).toBe('Node n1');
   });
 
@@ -431,7 +434,7 @@ describe('createUndoActions', () => {
       actions.pushUndoSnapshot('Initial');
 
       // Modify state
-      state.nodes.n3 = makeNode('n3');
+      state.nodes = { ...state.nodes, n3: makeNode('n3') }; // copy-on-write, as immer does
 
       // Undo
       actions.undo();
@@ -507,7 +510,7 @@ describe('createUndoActions', () => {
   describe('redo', () => {
     it('restores the undone state', () => {
       actions.pushUndoSnapshot('A');
-      state.nodes.n3 = makeNode('n3');
+      state.nodes = { ...state.nodes, n3: makeNode('n3') }; // copy-on-write, as immer does
       void { ...state.nodes };
 
       actions.pushUndoSnapshot('B');
@@ -589,7 +592,7 @@ describe('createUndoActions', () => {
       actions.pushUndoSnapshot('Initial');
 
       // Add a node
-      state.nodes.n3 = makeNode('n3');
+      state.nodes = { ...state.nodes, n3: makeNode('n3') }; // copy-on-write, as immer does
       actions.pushUndoSnapshot('Added n3');
 
       const diff = actions.diffUndoSnapshots(0, 1);
@@ -600,7 +603,7 @@ describe('createUndoActions', () => {
 
     it('supports comparing with current state (index -1)', () => {
       actions.pushUndoSnapshot('Before');
-      state.nodes.n3 = makeNode('n3');
+      state.nodes = { ...state.nodes, n3: makeNode('n3') }; // copy-on-write, as immer does
 
       const diff = actions.diffUndoSnapshots(0, -1);
       expect(diff).not.toBeNull();
@@ -613,13 +616,13 @@ describe('createUndoActions', () => {
       // Initial: n1, n2
       actions.pushUndoSnapshot('Step 1'); // undo[0] = {n1, n2}
 
-      state.nodes.n3 = makeNode('n3');
+      state.nodes = { ...state.nodes, n3: makeNode('n3') }; // copy-on-write, as immer does
       actions.pushUndoSnapshot('Step 2'); // undo[1] = {n1, n2, n3}
 
-      state.nodes.n4 = makeNode('n4');
+      state.nodes = { ...state.nodes, n4: makeNode('n4') }; // copy-on-write, as immer does
       actions.pushUndoSnapshot('Step 3'); // undo[2] = {n1, n2, n3, n4}
 
-      state.nodes.n5 = makeNode('n5');
+      state.nodes = { ...state.nodes, n5: makeNode('n5') }; // copy-on-write, as immer does
       // Current state: {n1, n2, n3, n4, n5}
 
       // jumpToUndo(0) with 3-entry stack:

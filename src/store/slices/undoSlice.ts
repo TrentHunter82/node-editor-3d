@@ -110,7 +110,21 @@ export function clearAllUndoStacks(): void {
 // ---------------------------------------------------------------------------
 
 export function takeSnapshot(state: SnapshotInput): Snapshot {
-  return structuredClone({ nodes: state.nodes, connections: state.connections, groups: state.groups, customNodeDefs: state.customNodeDefs, subgraphDefs: state.subgraphDefs, validationErrors: state.validationErrors, checkpoints: state.checkpoints, graphVariables: state.graphVariables });
+  // The store is immer-managed with autoFreeze, so state objects are immutable
+  // once finalized — a snapshot can share references instead of deep-cloning.
+  // This makes pushUndo O(1) instead of O(graph size); structuredClone of the
+  // entire graph on every action was the dominant cost of addNode and every
+  // other interactive edit on large graphs.
+  return {
+    nodes: state.nodes,
+    connections: state.connections,
+    groups: state.groups,
+    customNodeDefs: state.customNodeDefs,
+    subgraphDefs: state.subgraphDefs,
+    validationErrors: state.validationErrors,
+    checkpoints: state.checkpoints,
+    graphVariables: state.graphVariables,
+  };
 }
 
 export function pushUndo(state: SnapshotInput, label?: string): void {
