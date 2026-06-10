@@ -16,10 +16,10 @@ ecosystem.
 npm install
 npm run dev            # Vite dev server (port 5173, auto-increments if taken)
 npm run build          # tsc -b (project refs) THEN vite build -> dist/
-npm test               # vitest run (all 238 test files)
+npm test               # vitest run (all 249 test files)
 npm run test:watch     # vitest watch mode
 npm run test:coverage  # vitest run --coverage (v8)
-npm run lint           # eslint .
+npm run lint           # eslint . (includes import/no-cycle for app code)
 
 # Run a single test file
 npx vitest run src/test/phase26-e2e.test.ts
@@ -68,11 +68,10 @@ are on, so any unused import/var/param is a hard error, not a warning).
 ## Testing
 
 Vitest + Testing Library, jsdom env, `fake-indexeddb` for persistence tests.
-~9075 tests across 238 files (unit/integration/perf/regression, many named
+~9170 tests across 249 files (unit/integration/perf/regression, many named
 `phaseNN-*`). Performance tests assert wall-clock budgets, so they can be flaky
 on a loaded machine — re-run a perf file in isolation before trusting a failure.
-
-All tests pass (9075/9075) on a clean checkout after the revival fixes below.
+(CI runs vitest with `--retry=2` for the same reason.)
 
 ## Conventions worth knowing
 
@@ -81,6 +80,31 @@ All tests pass (9075/9075) on a clean checkout after the revival fixes below.
   on-node `DisplayReadout` shows its value by resolving the *incoming* connection
   (find the edge into input 0, read the source node's output), NOT by having the
   processor echo the input to a phantom output[0]. Keep new sink nodes consistent.
+- **Undo snapshots share references** (`undoSlice.takeSnapshot`) — the store is
+  immer-managed with autoFreeze, so snapshots are O(1) ref captures, NOT deep
+  clones. Never mutate store state in place outside `set()` (immer would throw
+  anyway); test harnesses must emulate copy-on-write when mutating mock state.
+- **Validation severity is message-based**: messages containing `(warning)` are
+  warnings (yellow), everything else is an error (red). Unconnected inputs with
+  a `defaultValue` are warnings; default-less ones are errors.
+- **`image` port type carries URL strings.** Compatible with `string` both ways.
+  Any node with an image-typed *output* gets a floating preview plane
+  (`NodeImagePreview`) when the output holds a URL.
+- **Remote execution** (`utils/remoteExecution.ts`): nodes flagged via
+  `registerRemoteNodeType` execute out-of-band on the active `ExecutionBackend`
+  through a FIFO queue (`dispatchRemoteQueued`, default 2 concurrent).
+  `utils/comfyBackend.ts` is the real transport (ComfyUI server). Plugin defs
+  can declare `screenFields` for editable data fields on the node screen.
+- **Async results re-run the graph regardless of autoExecute** via
+  `scheduleResultPropagation` (http-fetch + remote dispatches) — otherwise
+  outputs sit cached on the node while ports stay empty.
+- **http-fetch only fetches via `useHttpFetchAutoDispatch`** (edge-triggered on
+  resolved url/trigger inputs, 1s per-node cooldown to prevent fetch loops).
+- **Storage format changes** go through `utils/storageMigrations.ts`: bump
+  `CURRENT_STORAGE_VERSION`, add one registry entry. Loading future-version
+  data fails loudly and leaves the bytes untouched.
+- **Worker execution auto-falls-back to main thread when the graph contains
+  plugin nodes** (their processors are closures and can't reach the worker).
 
 ## Revival fixes (2026-05-31)
 

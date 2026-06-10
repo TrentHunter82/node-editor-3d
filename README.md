@@ -4,6 +4,13 @@ A fully-featured visual node editor rendered in 3D using React Three Fiber. Buil
 
 ![Node Editor 3D](public/og-preview.png)
 
+## Highlights
+
+- **Share any graph as a URL** — the Share button encodes the active graph (gzip + base64url) into a `#g=` link; opening the link imports and runs it. No backend involved.
+- **Built-in example templates** — Live BTC Price, Tip Calculator, Trig Playground, Palette Generator, and Data Pipeline instantiate in one click from the Template Library.
+- **ComfyUI remote execution** — point Settings → Remote Execution at a ComfyUI server, paste an API-format workflow into a *ComfyUI Workflow* node, and generated images appear as floating previews in the 3D scene. Jobs run through a FIFO queue with a configurable concurrency cap.
+- **Image previews in 3D** — any `image`-typed output (or the *Image Preview* node) renders its URL as a billboard plane above the node.
+
 ## Features
 
 - **3D workspace** — Orbit, pan, and zoom through your node graph in full 3D with perspective camera
@@ -77,9 +84,10 @@ npm run build
 | **Vector** | Compose/Decompose Vec3, Dot/Cross Product, Normalize, Length |
 | **Data** | Array ops (create, get, set, push, filter, map, reduce, slice, sort, reverse, flatten, zip, unique), Object ops (create, get, set, keys, values, merge), JSON parse/stringify, Base64, URI encode/decode, Variables |
 | **Color** | Color Picker, Color Mix, HSL/RGB conversion |
-| **Utility** | Note, Reroute, Random, Timestamp, Date format/parse, Custom expression |
-| **Live** | Timer (interval), HTTP Fetch |
+| **Utility** | Note, Reroute, Random, Image Preview, Timestamp, Date format/parse, Custom expression |
+| **Live** | Timer (interval), HTTP Fetch (auto-dispatches when its URL/trigger inputs change) |
 | **Subgraph** | Subgraph, Subgraph Input, Subgraph Output |
+| **Remote (plugins)** | Remote Compute (demo), ComfyUI Workflow |
 
 ## Keyboard Shortcuts
 
@@ -153,9 +161,15 @@ src/
   styles/        # Global CSS
 ```
 
+## Continuous Integration & Deployment
+
+GitHub Actions runs build + lint + tests on every push/PR to `main` (perf
+tests retry twice — they assert wall-clock budgets). Pushes to `main` also
+deploy the app to GitHub Pages.
+
 ## Testing
 
-238 test files covering unit, integration, performance, and regression scenarios.
+249 test files (9,100+ tests) covering unit, integration, performance, and regression scenarios.
 
 ```bash
 npm test                # Run all tests
