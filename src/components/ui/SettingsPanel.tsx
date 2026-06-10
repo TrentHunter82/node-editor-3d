@@ -428,6 +428,8 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
   const showExecutionHeatmap = useSettingsStore(s => s.showExecutionHeatmap);
   const showNodeScreens = useSettingsStore(s => s.showNodeScreens);
   const postProcessing = useSettingsStore(s => s.postProcessing);
+  const remoteBackend = useSettingsStore(s => s.remoteBackend);
+  const comfyUrl = useSettingsStore(s => s.comfyUrl);
   const zoomSensitivity = useSettingsStore(s => s.zoomSensitivity);
   const panSpeed = useSettingsStore(s => s.panSpeed);
   const rotateSpeed = useSettingsStore(s => s.rotateSpeed);
@@ -451,6 +453,8 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
   const setShowExecutionHeatmap = useSettingsStore(s => s.setShowExecutionHeatmap);
   const setShowNodeScreens = useSettingsStore(s => s.setShowNodeScreens);
   const setPostProcessing = useSettingsStore(s => s.setPostProcessing);
+  const setRemoteBackend = useSettingsStore(s => s.setRemoteBackend);
+  const setComfyUrl = useSettingsStore(s => s.setComfyUrl);
   const showValuePreviews = useEditorStore(s => s.showValuePreviews);
   const toggleValuePreviews = useEditorStore(s => s.toggleValuePreviews);
   const setZoomSensitivity = useSettingsStore(s => s.setZoomSensitivity);
@@ -726,6 +730,44 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
           <ToggleRow label="Live Mode (re-run on interval)" value={liveMode} onChange={setLiveMode} />
           {liveMode && (
             <SliderRow label="Live interval (ms)" value={liveIntervalMs} min={100} max={10000} step={100} onChange={setLiveIntervalMs} />
+          )}
+
+          {/* Remote execution section */}
+          <div style={{
+            padding: '12px 16px 4px',
+            fontSize: '9px',
+            color: 'var(--text-faint)',
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+          }}>
+            Remote Execution
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 16px', gap: 8 }}>
+            <span style={{ fontSize: '11px', color: 'var(--btn-text)' }}>Backend</span>
+            <select
+              className={styles.inspectorInput}
+              style={{ width: 130 }}
+              value={remoteBackend}
+              onChange={(e) => setRemoteBackend(e.target.value as 'demo' | 'comfyui')}
+              aria-label="Remote execution backend"
+            >
+              <option value="demo">Demo (in-process)</option>
+              <option value="comfyui">ComfyUI server</option>
+            </select>
+          </div>
+          {remoteBackend === 'comfyui' && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 16px', gap: 8 }}>
+              <span style={{ fontSize: '11px', color: 'var(--btn-text)' }}>Server URL</span>
+              <input
+                className={styles.inspectorInput}
+                style={{ width: 170 }}
+                value={comfyUrl}
+                onChange={(e) => setComfyUrl(e.target.value)}
+                placeholder="http://127.0.0.1:8188"
+                spellCheck={false}
+                aria-label="ComfyUI server URL"
+              />
+            </div>
           )}
 
           {/* Keyboard Shortcuts section */}

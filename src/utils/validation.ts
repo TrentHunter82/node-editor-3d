@@ -8,7 +8,7 @@ export interface ValidationIssue {
 }
 
 /** Valid port type values for shape validation */
-const VALID_PORT_TYPES = new Set<string>(['number', 'string', 'vector3', 'color', 'boolean', 'array', 'object', 'any']);
+const VALID_PORT_TYPES = new Set<string>(['number', 'string', 'vector3', 'color', 'boolean', 'array', 'object', 'image', 'any']);
 
 /** Node types that use expression-based processing */
 const EXPRESSION_NODE_TYPES = new Set(['custom', 'array-filter', 'array-map', 'array-reduce']);

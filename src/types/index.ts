@@ -23,7 +23,7 @@ export type NodeType =
   | 'custom'
   | 'subgraph' | 'subgraph-input' | 'subgraph-output';
 
-export type PortType = 'number' | 'string' | 'vector3' | 'color' | 'boolean' | 'array' | 'object' | 'any';
+export type PortType = 'number' | 'string' | 'vector3' | 'color' | 'boolean' | 'array' | 'object' | 'image' | 'any';
 
 export interface PortDef {
   id: string;
@@ -129,6 +129,8 @@ export interface NodeExecutionMetric {
 /** Port type compatibility: 'any' is compatible with everything, otherwise exact match required */
 export function isPortTypeCompatible(source: PortType, target: PortType): boolean {
   if (source === 'any' || target === 'any') return true;
+  // Image payloads are URL strings — allow wiring them to/from string ports.
+  if ((source === 'image' && target === 'string') || (source === 'string' && target === 'image')) return true;
   return source === target;
 }
 
@@ -183,6 +185,14 @@ export interface CheckpointEntry {
   };
 }
 
+/** Editable data field shown on a plugin node's screen (mirrors nodeFields.FieldDef). */
+export interface PluginFieldDef {
+  key: string;
+  label: string;
+  type: 'number' | 'text' | 'select' | 'color' | 'textarea' | 'boolean';
+  options?: string[];
+}
+
 /** Plugin node definition registered at runtime */
 export interface PluginNodeDef {
   /** Unique type identifier (must not collide with built-in NodeType) */
@@ -199,6 +209,8 @@ export interface PluginNodeDef {
   outputs: PortConfig[];
   /** Processor function: receives (node, inputs) and returns output values */
   processor: (node: EditorNode, inputs: Record<number, unknown>) => Record<number, unknown>;
+  /** Editable data fields rendered on the node screen (like built-in NODE_SCREEN_FIELDS). */
+  screenFields?: PluginFieldDef[];
 }
 
 /** Cumulative execution statistics for a graph */
@@ -273,6 +285,7 @@ export const PORT_TYPE_COLORS: Record<PortType, string> = {
   boolean: '#44DD88',  // green
   array: '#FF8C42',    // orange
   object: '#9B59B6',   // purple
+  image: '#E84393',    // pink — image handle (URL payload)
   any: '#888888',      // gray
 };
 

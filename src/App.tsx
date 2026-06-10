@@ -42,6 +42,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useLiveExecution } from './hooks/useLiveExecution';
 import { useRemoteAutoDispatch } from './hooks/useRemoteAutoDispatch';
 import { useHttpFetchAutoDispatch } from './hooks/useHttpFetchAutoDispatch';
+import { useRemoteBackendConfig } from './hooks/useRemoteBackendConfig';
 import { registerBuiltInPlugins } from './plugins/remoteDemo';
 
 // Lazy-loaded panels (only loaded when first opened)
@@ -305,6 +306,9 @@ export default function App() {
 
   // Auto-dispatch http-fetch nodes when their url/trigger inputs change.
   useHttpFetchAutoDispatch();
+
+  // Apply the Settings → Remote Execution backend choice (demo mock / ComfyUI).
+  useRemoteBackendConfig();
 
   // Safety net: reset interaction state on window blur — prevents stuck
   // drag/selection when the user switches tabs or clicks outside the browser.

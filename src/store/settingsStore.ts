@@ -93,6 +93,10 @@ export interface SettingsState {
   showNodeScreens: boolean;
   /** Render Bloom/Vignette post-processing (costs ~3-5ms per rendered frame). Default: true */
   postProcessing: boolean;
+  /** Which backend remote nodes dispatch to. Default: in-process demo mock. */
+  remoteBackend: 'demo' | 'comfyui';
+  /** ComfyUI server base URL (used when remoteBackend is 'comfyui'). */
+  comfyUrl: string;
   // Persistence
   autoSave: boolean;
   recentFiles: string[];
@@ -152,6 +156,8 @@ export interface SettingsState {
   setShowExecutionHeatmap: (enabled: boolean) => void;
   setShowNodeScreens: (enabled: boolean) => void;
   setPostProcessing: (enabled: boolean) => void;
+  setRemoteBackend: (backend: 'demo' | 'comfyui') => void;
+  setComfyUrl: (url: string) => void;
   setAutoSave: (enabled: boolean) => void;
   addRecentFile: (path: string) => void;
   clearRecentFiles: () => void;
@@ -217,6 +223,8 @@ export const DEFAULT_SETTINGS = {
   showExecutionHeatmap: false,
   showNodeScreens: true,
   postProcessing: true,
+  remoteBackend: 'demo' as 'demo' | 'comfyui',
+  comfyUrl: 'http://127.0.0.1:8188',
   autoSave: true,
   recentFiles: [] as string[],
   recentlyUsedNodes: [] as string[],
@@ -446,6 +454,12 @@ export const useSettingsStore = create<SettingsState>()(
       setPostProcessing: (enabled) => {
         set(s => { s.postProcessing = enabled; });
       },
+      setRemoteBackend: (backend) => {
+        set(s => { s.remoteBackend = backend; });
+      },
+      setComfyUrl: (url) => {
+        set(s => { s.comfyUrl = url; });
+      },
       setAutoSave: (enabled) => {
         set(s => { s.autoSave = enabled; });
       },
@@ -652,6 +666,8 @@ useSettingsStore.subscribe(
         showExecutionHeatmap: state.showExecutionHeatmap,
         showNodeScreens: state.showNodeScreens,
         postProcessing: state.postProcessing,
+        remoteBackend: state.remoteBackend,
+        comfyUrl: state.comfyUrl,
         autoSave: state.autoSave,
         recentFiles: state.recentFiles,
         recentlyUsedNodes: state.recentlyUsedNodes,

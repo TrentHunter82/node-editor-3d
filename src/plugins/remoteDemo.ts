@@ -23,6 +23,7 @@ import {
   MockExecutionBackend,
 } from '../utils/remoteExecution';
 import type { PluginNodeDef } from '../types';
+import { registerComfyWorkflowPlugin } from './comfyWorkflow';
 
 /** The demo remote node type id. */
 export const REMOTE_COMPUTE_TYPE = 'remote-compute';
@@ -67,6 +68,7 @@ export function registerBuiltInPlugins(opts: RegisterBuiltInPluginsOptions = {})
   }
   // A Set add; idempotent regardless of plugin registration state.
   registerRemoteNodeType(REMOTE_COMPUTE_TYPE);
+  registerComfyWorkflowPlugin();
 
   // Only upgrade the pristine default mock (id 'mock') — never clobber a real
   // backend someone installed, and stay idempotent (the demo backend has its

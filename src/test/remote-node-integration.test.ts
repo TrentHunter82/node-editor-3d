@@ -49,12 +49,14 @@ describe('remoteDemo — built-in plugin registration', () => {
     expect(def?.outputs).toHaveLength(3);
   });
 
-  it('is idempotent — repeated calls register exactly one plugin', () => {
+  it('is idempotent — repeated calls register each built-in plugin exactly once', () => {
     registerBuiltInPlugins();
     registerBuiltInPlugins();
     registerBuiltInPlugins();
-    expect(usePluginStore.getState().pluginCount).toBe(1);
+    // remote-compute + comfy-workflow
+    expect(usePluginStore.getState().pluginCount).toBe(2);
     expect(isRemoteNodeType(REMOTE_COMPUTE_TYPE)).toBe(true);
+    expect(isRemoteNodeType('comfy-workflow')).toBe(true);
   });
 
   it('the registered processor surfaces the cached remote result', () => {

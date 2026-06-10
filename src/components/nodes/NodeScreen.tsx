@@ -476,7 +476,12 @@ interface NodeScreenProps {
 }
 
 export const NodeScreen = memo(function NodeScreen({ node, currentH, nodeW, nodeD }: NodeScreenProps) {
-  const fields = useMemo(() => NODE_SCREEN_FIELDS[node.type] ?? [], [node.type]);
+  // Built-in types get their fields from NODE_SCREEN_FIELDS; plugin types can
+  // declare screenFields in their def (same shape).
+  const fields = useMemo(
+    () => NODE_SCREEN_FIELDS[node.type] ?? getPluginDef(node.type)?.screenFields ?? [],
+    [node.type],
+  );
   const execState = useEditorStore(s => s.executionStates[node.id]) as ExecutionState | undefined;
   const execError = useEditorStore(s => s.executionErrors[node.id]) as string | undefined;
 
