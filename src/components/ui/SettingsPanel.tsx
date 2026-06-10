@@ -427,6 +427,7 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
   const connectionFlowAnimation = useSettingsStore(s => s.connectionFlowAnimation);
   const showExecutionHeatmap = useSettingsStore(s => s.showExecutionHeatmap);
   const showNodeScreens = useSettingsStore(s => s.showNodeScreens);
+  const postProcessing = useSettingsStore(s => s.postProcessing);
   const zoomSensitivity = useSettingsStore(s => s.zoomSensitivity);
   const panSpeed = useSettingsStore(s => s.panSpeed);
   const rotateSpeed = useSettingsStore(s => s.rotateSpeed);
@@ -449,6 +450,7 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
   const setConnectionFlowAnimation = useSettingsStore(s => s.setConnectionFlowAnimation);
   const setShowExecutionHeatmap = useSettingsStore(s => s.setShowExecutionHeatmap);
   const setShowNodeScreens = useSettingsStore(s => s.setShowNodeScreens);
+  const setPostProcessing = useSettingsStore(s => s.setPostProcessing);
   const showValuePreviews = useEditorStore(s => s.showValuePreviews);
   const toggleValuePreviews = useEditorStore(s => s.toggleValuePreviews);
   const setZoomSensitivity = useSettingsStore(s => s.setZoomSensitivity);
@@ -655,6 +657,7 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
           <ToggleRow label="Node screens" value={showNodeScreens} onChange={setShowNodeScreens} />
           <ToggleRow label="Value previews" value={showValuePreviews} onChange={() => toggleValuePreviews()} />
           <ToggleRow label="Execution heatmap" value={showExecutionHeatmap} onChange={setShowExecutionHeatmap} />
+          <ToggleRow label="Post-processing (bloom)" value={postProcessing} onChange={setPostProcessing} />
 
           {/* Camera section */}
           <div style={{

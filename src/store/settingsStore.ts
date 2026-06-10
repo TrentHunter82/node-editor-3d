@@ -91,6 +91,8 @@ export interface SettingsState {
   showExecutionHeatmap: boolean;
   /** Show NodeScreen editing panels on all nodes (not just selected). Default: true */
   showNodeScreens: boolean;
+  /** Render Bloom/Vignette post-processing (costs ~3-5ms per rendered frame). Default: true */
+  postProcessing: boolean;
   // Persistence
   autoSave: boolean;
   recentFiles: string[];
@@ -149,6 +151,7 @@ export interface SettingsState {
   setConnectionFlowAnimation: (enabled: boolean) => void;
   setShowExecutionHeatmap: (enabled: boolean) => void;
   setShowNodeScreens: (enabled: boolean) => void;
+  setPostProcessing: (enabled: boolean) => void;
   setAutoSave: (enabled: boolean) => void;
   addRecentFile: (path: string) => void;
   clearRecentFiles: () => void;
@@ -213,6 +216,7 @@ export const DEFAULT_SETTINGS = {
   connectionFlowAnimation: true,
   showExecutionHeatmap: false,
   showNodeScreens: true,
+  postProcessing: true,
   autoSave: true,
   recentFiles: [] as string[],
   recentlyUsedNodes: [] as string[],
@@ -439,6 +443,9 @@ export const useSettingsStore = create<SettingsState>()(
       setShowNodeScreens: (enabled) => {
         set(s => { s.showNodeScreens = enabled; });
       },
+      setPostProcessing: (enabled) => {
+        set(s => { s.postProcessing = enabled; });
+      },
       setAutoSave: (enabled) => {
         set(s => { s.autoSave = enabled; });
       },
@@ -644,6 +651,7 @@ useSettingsStore.subscribe(
         connectionFlowAnimation: state.connectionFlowAnimation,
         showExecutionHeatmap: state.showExecutionHeatmap,
         showNodeScreens: state.showNodeScreens,
+        postProcessing: state.postProcessing,
         autoSave: state.autoSave,
         recentFiles: state.recentFiles,
         recentlyUsedNodes: state.recentlyUsedNodes,

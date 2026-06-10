@@ -110,6 +110,7 @@ export default function App() {
   const [keyboardShortcutsOpen, setKeyboardShortcutsOpen] = usePanelState('keyboardShortcuts');
   const uiScale = useSettingsStore(s => s.uiScale);
   const theme = useSettingsStore(s => s.theme);
+  const postProcessing = useSettingsStore(s => s.postProcessing);
 
   // Apply theme to document root
   useEffect(() => {
@@ -392,7 +393,7 @@ export default function App() {
           aria-label="Node editor canvas — use Tab to navigate nodes, arrow keys to move, Alt+arrows to traverse connections"
         >
           <SceneSetup />
-          <PostProcessing />
+          {postProcessing && <PostProcessing />}
           <NodeGraph />
           <ConnectionGraph />
           <GridFloor />
