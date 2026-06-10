@@ -15,7 +15,7 @@ import { useEditorStore } from '../../store/editorStore';
 import type { EditorNode } from '../../types';
 
 /** Index of the first image-typed output port, or -1. */
-export function firstImagePortIndex(node: Pick<EditorNode, 'outputs'>): number {
+function firstImagePortIndex(node: Pick<EditorNode, 'outputs'>): number {
   return node.outputs.findIndex(o => o.portType === 'image');
 }
 

@@ -97,6 +97,8 @@ export interface SettingsState {
   remoteBackend: 'demo' | 'comfyui';
   /** ComfyUI server base URL (used when remoteBackend is 'comfyui'). */
   comfyUrl: string;
+  /** Max concurrent remote jobs; the rest queue FIFO. */
+  remoteMaxConcurrent: number;
   // Persistence
   autoSave: boolean;
   recentFiles: string[];
@@ -158,6 +160,7 @@ export interface SettingsState {
   setPostProcessing: (enabled: boolean) => void;
   setRemoteBackend: (backend: 'demo' | 'comfyui') => void;
   setComfyUrl: (url: string) => void;
+  setRemoteMaxConcurrent: (n: number) => void;
   setAutoSave: (enabled: boolean) => void;
   addRecentFile: (path: string) => void;
   clearRecentFiles: () => void;
@@ -225,6 +228,7 @@ export const DEFAULT_SETTINGS = {
   postProcessing: true,
   remoteBackend: 'demo' as 'demo' | 'comfyui',
   comfyUrl: 'http://127.0.0.1:8188',
+  remoteMaxConcurrent: 2,
   autoSave: true,
   recentFiles: [] as string[],
   recentlyUsedNodes: [] as string[],
@@ -460,6 +464,9 @@ export const useSettingsStore = create<SettingsState>()(
       setComfyUrl: (url) => {
         set(s => { s.comfyUrl = url; });
       },
+      setRemoteMaxConcurrent: (n) => {
+        set(s => { s.remoteMaxConcurrent = Math.max(1, Math.min(8, Math.floor(n))); });
+      },
       setAutoSave: (enabled) => {
         set(s => { s.autoSave = enabled; });
       },
@@ -668,6 +675,7 @@ useSettingsStore.subscribe(
         postProcessing: state.postProcessing,
         remoteBackend: state.remoteBackend,
         comfyUrl: state.comfyUrl,
+        remoteMaxConcurrent: state.remoteMaxConcurrent,
         autoSave: state.autoSave,
         recentFiles: state.recentFiles,
         recentlyUsedNodes: state.recentlyUsedNodes,

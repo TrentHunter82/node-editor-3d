@@ -40,7 +40,7 @@ import { saveMultiGraphAsync } from '../utils/serialization';
 import type { MultiGraphStorage } from '../utils/serialization';
 import { useSettingsStore } from './settingsStore';
 import { topologicalSort, invalidateDownstream } from '../utils/execution';
-import { dispatchRemote, REMOTE_RESULT_KEY, REMOTE_STATUS_KEY, REMOTE_ERROR_KEY, REMOTE_PROGRESS_KEY } from '../utils/remoteExecution';
+import { dispatchRemoteQueued, REMOTE_RESULT_KEY, REMOTE_STATUS_KEY, REMOTE_ERROR_KEY, REMOTE_PROGRESS_KEY, REMOTE_QUEUE_POS_KEY } from '../utils/remoteExecution';
 import type { EnrichedGraphDiff, SnapshotSummary } from '../utils/graphDiff';
 import type { AlignDirection, DistributeDirection } from '../utils/layout';
 import { selectionInitialState, createSelectionActions } from './slices/selectionSlice';
@@ -1481,12 +1481,15 @@ export const useEditorStore = create<EditorState>()(
           }
         });
 
-        void dispatchRemote(
+        void dispatchRemoteQueued(
           { nodeId, nodeType: node.type, inputs, data: { ...node.data } },
           {
             signal: controller.signal,
             onProgress: (p) => {
               set(s => { const n = s.nodes[nodeId]; if (n) n.data[REMOTE_PROGRESS_KEY] = p; });
+            },
+            onQueuePosition: (pos) => {
+              set(s => { const n = s.nodes[nodeId]; if (n) n.data[REMOTE_QUEUE_POS_KEY] = pos; });
             },
           },
         ).then(result => {
@@ -1500,6 +1503,7 @@ export const useEditorStore = create<EditorState>()(
               n.data[REMOTE_STATUS_KEY] = result.status;
               n.data[REMOTE_ERROR_KEY] = result.error ?? '';
               n.data[REMOTE_PROGRESS_KEY] = 1;
+              n.data[REMOTE_QUEUE_POS_KEY] = 0;
             }
             s.executionStates[nodeId] = result.status === 'ok' ? 'complete' : 'error';
             if (result.status === 'error' && result.error) s.executionErrors[nodeId] = result.error;

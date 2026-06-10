@@ -430,6 +430,7 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
   const postProcessing = useSettingsStore(s => s.postProcessing);
   const remoteBackend = useSettingsStore(s => s.remoteBackend);
   const comfyUrl = useSettingsStore(s => s.comfyUrl);
+  const remoteMaxConcurrent = useSettingsStore(s => s.remoteMaxConcurrent);
   const zoomSensitivity = useSettingsStore(s => s.zoomSensitivity);
   const panSpeed = useSettingsStore(s => s.panSpeed);
   const rotateSpeed = useSettingsStore(s => s.rotateSpeed);
@@ -455,6 +456,7 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
   const setPostProcessing = useSettingsStore(s => s.setPostProcessing);
   const setRemoteBackend = useSettingsStore(s => s.setRemoteBackend);
   const setComfyUrl = useSettingsStore(s => s.setComfyUrl);
+  const setRemoteMaxConcurrent = useSettingsStore(s => s.setRemoteMaxConcurrent);
   const showValuePreviews = useEditorStore(s => s.showValuePreviews);
   const toggleValuePreviews = useEditorStore(s => s.toggleValuePreviews);
   const setZoomSensitivity = useSettingsStore(s => s.setZoomSensitivity);
@@ -769,6 +771,7 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
               />
             </div>
           )}
+          <SliderRow label="Max concurrent jobs" value={remoteMaxConcurrent} min={1} max={8} step={1} onChange={setRemoteMaxConcurrent} />
 
           {/* Keyboard Shortcuts section */}
           <KeyboardShortcutsSection />

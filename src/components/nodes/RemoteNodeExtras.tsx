@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { useEditorStore } from '../../store/editorStore';
-import { REMOTE_PROGRESS_KEY, REMOTE_STATUS_KEY, REMOTE_ERROR_KEY } from '../../utils/remoteExecution';
+import { REMOTE_PROGRESS_KEY, REMOTE_STATUS_KEY, REMOTE_ERROR_KEY, REMOTE_QUEUE_POS_KEY } from '../../utils/remoteExecution';
 import { hexToRgba } from './nodeScreenHelpers';
 import type { ExecutionState } from '../../types';
 
@@ -63,6 +63,10 @@ export const RemoteNodeExtras = memo(function RemoteNodeExtras({ nodeId, accentH
     const v = s.nodes[nodeId]?.data[REMOTE_ERROR_KEY];
     return typeof v === 'string' ? v : '';
   });
+  const queuePos = useEditorStore(s => {
+    const v = s.nodes[nodeId]?.data[REMOTE_QUEUE_POS_KEY];
+    return typeof v === 'number' ? v : 0;
+  });
 
   const running = execState === 'running';
   const pct = Math.round(Math.max(0, Math.min(1, progress)) * 100);
@@ -113,7 +117,7 @@ export const RemoteNodeExtras = memo(function RemoteNodeExtras({ nodeId, accentH
         marginTop: '3px',
         color: error ? 'var(--danger)' : hexToRgba(accentHex, 0.6),
       }}>
-        <span>{running ? `running ${pct}%` : status}</span>
+        <span>{running ? (queuePos > 0 ? `queued #${queuePos}` : `running ${pct}%`) : status}</span>
         {error && <span title={error}>err</span>}
       </div>
     </div>

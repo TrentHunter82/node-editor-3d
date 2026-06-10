@@ -187,6 +187,99 @@ export async function dispatchRemote(req: RemoteRequest, opts: DispatchOptions =
   }
 }
 
+// ── Job queue ──────────────────────────────────────────────────────────────
+//
+// ComfyUI-style backends process one prompt at a time per GPU; firing many
+// dispatches concurrently just times jobs out. The queue caps in-flight
+// dispatches (default 2) and runs the rest FIFO, reporting each waiting
+// job's position so the UI can show "queued #N".
+
+export interface QueuedDispatchOptions extends DispatchOptions {
+  /** Called with 1-based queue position while waiting; 0 when the job starts. */
+  onQueuePosition?: (position: number) => void;
+}
+
+interface QueueEntry {
+  req: RemoteRequest;
+  opts: QueuedDispatchOptions;
+  resolve: (result: RemoteResult) => void;
+}
+
+let maxConcurrentRemote = 2;
+const remoteQueue: QueueEntry[] = [];
+let runningRemote = 0;
+
+export function setMaxConcurrentRemote(n: number): void {
+  maxConcurrentRemote = Math.max(1, Math.floor(n));
+  pumpRemoteQueue();
+}
+
+export function getMaxConcurrentRemote(): number {
+  return maxConcurrentRemote;
+}
+
+export function getRemoteQueueDepth(): number {
+  return remoteQueue.length;
+}
+
+export function getRunningRemoteCount(): number {
+  return runningRemote;
+}
+
+function notifyQueuePositions(): void {
+  remoteQueue.forEach((entry, i) => entry.opts.onQueuePosition?.(i + 1));
+}
+
+function pumpRemoteQueue(): void {
+  while (runningRemote < maxConcurrentRemote && remoteQueue.length > 0) {
+    const entry = remoteQueue.shift()!;
+    if (entry.opts.signal?.aborted) {
+      entry.resolve({ status: 'error', outputs: {}, error: 'cancelled' });
+      continue;
+    }
+    runningRemote++;
+    entry.opts.onQueuePosition?.(0);
+    void dispatchRemote(entry.req, entry.opts).then(result => {
+      runningRemote--;
+      entry.resolve(result);
+      pumpRemoteQueue();
+    });
+  }
+  notifyQueuePositions();
+}
+
+/**
+ * Like `dispatchRemote`, but routed through the global FIFO queue with a
+ * concurrency cap. Aborting a queued job (via opts.signal) removes it from
+ * the queue and resolves with a cancelled result without ever dispatching.
+ */
+export function dispatchRemoteQueued(req: RemoteRequest, opts: QueuedDispatchOptions = {}): Promise<RemoteResult> {
+  return new Promise<RemoteResult>(resolve => {
+    const entry: QueueEntry = { req, opts, resolve };
+    remoteQueue.push(entry);
+    opts.signal?.addEventListener(
+      'abort',
+      () => {
+        const i = remoteQueue.indexOf(entry);
+        if (i >= 0) {
+          remoteQueue.splice(i, 1);
+          notifyQueuePositions();
+          resolve({ status: 'error', outputs: {}, error: 'cancelled' });
+        }
+      },
+      { once: true },
+    );
+    pumpRemoteQueue();
+  });
+}
+
+/** Test hook: clear the queue and restore defaults. */
+export function _resetRemoteQueue(): void {
+  remoteQueue.length = 0;
+  runningRemote = 0;
+  maxConcurrentRemote = 2;
+}
+
 // ── Processor helper ───────────────────────────────────────────────────────
 
 /** The keys a remote dispatch writes onto a node's `data`. */
@@ -194,6 +287,7 @@ export const REMOTE_RESULT_KEY = '_remoteResult';
 export const REMOTE_STATUS_KEY = '_remoteStatus';
 export const REMOTE_ERROR_KEY = '_remoteError';
 export const REMOTE_PROGRESS_KEY = '_remoteProgress';
+export const REMOTE_QUEUE_POS_KEY = '_remoteQueuePos';
 
 /**
  * Synchronous processor body for a remote node: return the result currently
