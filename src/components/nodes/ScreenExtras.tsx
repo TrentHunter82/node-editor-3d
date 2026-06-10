@@ -68,6 +68,15 @@ function formatOutputValue(v: unknown): string {
   if (typeof v === 'boolean') return v ? 'true' : 'false';
   if (Array.isArray(v)) return `[${v.length}]`;
   if (typeof v === 'string') return v.length > 20 ? v.slice(0, 20) + '\u2026' : v;
+  if (typeof v === 'object') {
+    // Compact JSON preview instead of "[object Object]"
+    try {
+      const json = JSON.stringify(v);
+      return json.length > 24 ? json.slice(0, 24) + '\u2026' : json;
+    } catch {
+      return '{\u2026}';
+    }
+  }
   return String(v);
 }
 

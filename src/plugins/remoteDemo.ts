@@ -15,7 +15,13 @@
  * remote node type at HTTP/WebSocket/GPU-queue transport.
  */
 import { registerPlugin, isPluginType } from '../store/pluginStore';
-import { registerRemoteNodeType, remoteCachedResult } from '../utils/remoteExecution';
+import {
+  registerRemoteNodeType,
+  remoteCachedResult,
+  getExecutionBackend,
+  setExecutionBackend,
+  MockExecutionBackend,
+} from '../utils/remoteExecution';
 import type { PluginNodeDef } from '../types';
 
 /** The demo remote node type id. */
@@ -41,14 +47,33 @@ const remoteComputeDef: PluginNodeDef = {
   processor: (node) => remoteCachedResult(node),
 };
 
+export interface RegisterBuiltInPluginsOptions {
+  /**
+   * Give the demo MockExecutionBackend per-step latency so the on-node
+   * progress bar is visible (the pristine default resolves on microtasks —
+   * the bar snaps to 100% and Cancel never shows). Omit (tests) to leave the
+   * active backend untouched.
+   */
+  demoBackendLatencyMs?: number;
+}
+
 /**
  * Register the built-in demo plugins. Idempotent — safe to call from an effect
  * that may run more than once (StrictMode double-mount, HMR).
  */
-export function registerBuiltInPlugins(): void {
+export function registerBuiltInPlugins(opts: RegisterBuiltInPluginsOptions = {}): void {
   if (!isPluginType(REMOTE_COMPUTE_TYPE)) {
     registerPlugin(remoteComputeDef);
   }
   // A Set add; idempotent regardless of plugin registration state.
   registerRemoteNodeType(REMOTE_COMPUTE_TYPE);
+
+  // Only upgrade the pristine default mock (id 'mock') — never clobber a real
+  // backend someone installed, and stay idempotent (the demo backend has its
+  // own id, so a second call is a no-op).
+  if (opts.demoBackendLatencyMs !== undefined && getExecutionBackend().id === 'mock') {
+    setExecutionBackend(
+      new MockExecutionBackend({ id: 'mock-demo', latencyMs: opts.demoBackendLatencyMs, steps: 6 }),
+    );
+  }
 }

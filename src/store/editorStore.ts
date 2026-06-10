@@ -1504,7 +1504,10 @@ export const useEditorStore = create<EditorState>()(
             s.executionStates[nodeId] = result.status === 'ok' ? 'complete' : 'error';
             if (result.status === 'error' && result.error) s.executionErrors[nodeId] = result.error;
           });
-          scheduleAutoExecute(() => get().executeGraph());
+          // Run regardless of the autoExecute setting — the result has already
+          // arrived; without a re-run the node reads "complete" while its
+          // output ports stay empty.
+          scheduleResultPropagation(() => get().executeGraph());
         });
       },
 

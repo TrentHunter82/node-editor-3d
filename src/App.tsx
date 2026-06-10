@@ -297,7 +297,8 @@ export default function App() {
   useLiveExecution();
 
   // Register built-in plugins (the demo remote-compute node) once on mount.
-  useEffect(() => { registerBuiltInPlugins(); }, []);
+  // The demo backend gets real latency so its progress bar animates visibly.
+  useEffect(() => { registerBuiltInPlugins({ demoBackendLatencyMs: 250 }); }, []);
 
   // Auto-dispatch remote-executed nodes when their inputs change.
   useRemoteAutoDispatch();
