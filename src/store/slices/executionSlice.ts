@@ -609,17 +609,25 @@ export function createExecutionActions(
           for (const [id, msg] of errorEntries) {
             s.executionErrors[id] = msg;
           }
-          // Store execution metrics (profiling) and pre-compute max node duration + timings
-          s.executionMetrics = {};
+          // Store execution metrics (profiling) and pre-compute max node duration + timings.
+          // Preserve referential identity for entries whose visible fields are
+          // unchanged (typical for cache hits) — per-node subscribers in
+          // NodeModule then skip re-rendering untouched nodes.
+          const prevMetrics = s.executionMetrics;
+          const nextMetrics: Record<string, NodeExecutionMetric> = {};
           s.executionTimings = {};
           let maxNodeDuration = 0;
           for (const [id, metric] of metricEntries) {
-            s.executionMetrics[id] = metric;
+            const prev = prevMetrics[id];
+            nextMetrics[id] = prev && prev.duration === metric.duration && prev.cacheHit === metric.cacheHit
+              ? prev
+              : metric;
             s.executionTimings[id] = metric.duration;
             if (!metric.cacheHit && metric.duration > maxNodeDuration) {
               maxNodeDuration = metric.duration;
             }
           }
+          s.executionMetrics = nextMetrics;
           s.executionMaxNodeDuration = maxNodeDuration;
           s.executionTotalDuration = totalDuration;
 

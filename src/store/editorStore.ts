@@ -1209,7 +1209,19 @@ export const useEditorStore = create<EditorState>()(
         }
 
         set(s => {
-          s.validationErrors = errors;
+          // Preserve referential identity for nodes whose messages are
+          // unchanged — NodeModule subscribes per-node, so stable refs mean
+          // a validation pass only re-renders nodes whose issues changed.
+          const prev = s.validationErrors;
+          const next: Record<string, string[]> = {};
+          for (const [nodeId, msgs] of Object.entries(errors)) {
+            const old = prev[nodeId];
+            next[nodeId] =
+              old && old.length === msgs.length && old.every((m, i) => m === msgs[i])
+                ? old
+                : msgs;
+          }
+          s.validationErrors = next;
         });
       },
 
