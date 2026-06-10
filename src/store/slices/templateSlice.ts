@@ -8,6 +8,7 @@
  */
 import type { Connection, NodeTemplate } from '../../types';
 import type { EditorState } from '../editorStore';
+import { BUILTIN_TEMPLATES } from '../../utils/builtinTemplates';
 
 interface TemplateHelpers {
   pushUndo: (label?: string) => void;
@@ -54,7 +55,8 @@ export function createTemplateActions(
 
     instantiateTemplate: (templateId: string, position?: [number, number, number]): void => {
       const state = get();
-      const tmpl = state.templates[templateId];
+      // User templates first, then the built-in examples registry
+      const tmpl = state.templates[templateId] ?? BUILTIN_TEMPLATES[templateId];
       if (!tmpl || tmpl.nodes.length === 0) return;
 
       pushUndo('Instantiate template');

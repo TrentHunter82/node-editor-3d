@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useEditorStore } from '../../store/editorStore';
+import { BUILTIN_TEMPLATE_LIST } from '../../utils/builtinTemplates';
 import styles from '../../styles/panels.module.css';
 
 export function TemplateLibrary() {
@@ -69,8 +70,7 @@ export function TemplateLibrary() {
     input.click();
   }, [importTemplates]);
 
-  // If no templates and nothing selected, show minimal toggle
-  if (!hasTemplates && selectedCount === 0 && !expanded) return null;
+  // Built-in examples are always available, so the panel always shows.
 
   return (
     <div className={styles.toolbar} style={{ top: 'auto', bottom: 48, left: 20, maxHeight: 300, overflowY: 'auto' }}>
@@ -86,7 +86,7 @@ export function TemplateLibrary() {
             <path d="M3 9h18" />
             <path d="M9 21V9" />
           </svg>
-          Templates {hasTemplates ? `(${templateList.length})` : ''}
+          Templates ({templateList.length + BUILTIN_TEMPLATE_LIST.length})
         </button>
       </div>
 
@@ -126,6 +126,25 @@ export function TemplateLibrary() {
             </div>
           )}
 
+          {/* Built-in examples — always present, not deletable */}
+          <div className={styles.templateSection}>
+            <div className={styles.toolbarSectionLabel}>Examples</div>
+            {BUILTIN_TEMPLATE_LIST.map(t => (
+              <button
+                key={t.id}
+                type="button"
+                className={styles.templateItem}
+                onClick={() => instantiateTemplate(t.id)}
+                title={`${t.nodes.length} nodes, ${t.connections.length} connections`}
+              >
+                <span className={styles.templateName}>{t.name}</span>
+                <span className={styles.templateMeta}>
+                  {t.nodes.length}n {t.connections.length}c
+                </span>
+              </button>
+            ))}
+          </div>
+
           {/* Template list grouped by category */}
           {Object.entries(grouped).map(([category, tmpls]) => (
             <div key={category} className={styles.templateSection}>
@@ -159,7 +178,7 @@ export function TemplateLibrary() {
 
           {!hasTemplates && (
             <div style={{ padding: '8px 14px', fontSize: 10, color: 'var(--text-faint)', fontFamily: 'JetBrains Mono, monospace' }}>
-              No templates yet. Select nodes and save.
+              No saved templates yet. Select nodes and save.
             </div>
           )}
 

@@ -40,6 +40,7 @@ import { seedStarterGraph } from './utils/starterGraph';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useLiveExecution } from './hooks/useLiveExecution';
 import { useRemoteAutoDispatch } from './hooks/useRemoteAutoDispatch';
+import { useHttpFetchAutoDispatch } from './hooks/useHttpFetchAutoDispatch';
 import { registerBuiltInPlugins } from './plugins/remoteDemo';
 
 // Lazy-loaded panels (only loaded when first opened)
@@ -286,6 +287,9 @@ export default function App() {
 
   // Auto-dispatch remote-executed nodes when their inputs change.
   useRemoteAutoDispatch();
+
+  // Auto-dispatch http-fetch nodes when their url/trigger inputs change.
+  useHttpFetchAutoDispatch();
 
   // Safety net: reset interaction state on window blur — prevents stuck
   // drag/selection when the user switches tabs or clicks outside the browser.

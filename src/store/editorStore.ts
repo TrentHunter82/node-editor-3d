@@ -123,6 +123,21 @@ export function cancelAutoExecute(): void {
   }
 }
 
+/**
+ * Schedule a debounced re-execution that runs regardless of the autoExecute
+ * setting. Used when async results land on a node (http-fetch, remote
+ * execution): the data has already arrived, so the graph must re-run for it
+ * to reach downstream ports — otherwise the node shows "complete" while its
+ * outputs stay empty until the user happens to execute manually.
+ */
+function scheduleResultPropagation(executeGraph: () => void): void {
+  if (autoExecTimer !== null) clearTimeout(autoExecTimer);
+  autoExecTimer = setTimeout(() => {
+    autoExecTimer = null;
+    executeGraph();
+  }, AUTO_EXEC_DEBOUNCE_MS);
+}
+
 function makePortDefs(prefix: string, configs: { label: string; portType: PortType; description?: string; defaultValue?: unknown; min?: number; max?: number }[]) {
   return configs.map((cfg, i) => {
     const def: { id: string; label: string; portType: PortType; description?: string; defaultValue?: unknown; min?: number; max?: number } = {
@@ -1405,8 +1420,8 @@ export const useEditorStore = create<EditorState>()(
                 s.nodes[nodeId].data._fetchError = '';
               }
             });
-            // Trigger auto-execute after fetch completes
-            scheduleAutoExecute(() => get().executeGraph());
+            // Re-run so the result reaches downstream ports (regardless of autoExecute)
+            scheduleResultPropagation(() => get().executeGraph());
           })
           .catch((err: unknown) => {
             const msg = err instanceof Error ? err.message : String(err);
@@ -1417,8 +1432,8 @@ export const useEditorStore = create<EditorState>()(
                 s.nodes[nodeId].data._fetchError = msg;
               }
             });
-            // Trigger auto-execute so downstream error port propagates
-            scheduleAutoExecute(() => get().executeGraph());
+            // Re-run so the error output propagates downstream
+            scheduleResultPropagation(() => get().executeGraph());
           });
       },
 
