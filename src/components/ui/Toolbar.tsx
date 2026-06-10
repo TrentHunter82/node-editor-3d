@@ -10,6 +10,7 @@ import type { MultiGraphStorage } from '../../utils/serialization';
 import { generateGraphDocs } from '../../utils/graphDocs';
 import { CustomNodeModal } from './CustomNodeModal';
 import { ExportSVGDialog } from './ExportSVGDialog';
+import { buildShareUrl } from '../../utils/shareUrl';
 import { Tooltip } from './Tooltip';
 import { NodeTypeTooltip } from './NodeTypeTooltip';
 import { getNodeLabel, COLOR_HEX } from '../../types/nodeLabels';
@@ -269,6 +270,33 @@ export function Toolbar() {
         useEditorStore.getState().importWorkflow(data);
       }
     }
+  }, []);
+
+  // Share link: encode the active graph into a copyable URL
+  const [shareToast, setShareToast] = useState<string | null>(null);
+  const handleShareLink = useCallback(async () => {
+    const s = useEditorStore.getState();
+    const hasSubgraphs = Object.values(s.nodes).some(n => n.type === 'subgraph');
+    const url = await buildShareUrl({
+      nodes: s.nodes,
+      connections: s.connections,
+      groups: s.groups,
+      customNodeDefs: s.customNodeDefs,
+      ...(Object.keys(s.subgraphDefs).length > 0 ? { subgraphDefs: s.subgraphDefs } : {}),
+    });
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(url);
+      copied = true;
+    } catch {
+      console.log('[share-url]', url);
+    }
+    setShareToast(
+      !copied ? 'Copy failed — link logged to browser console'
+      : hasSubgraphs ? 'Link copied — note: subgraph internals are not included'
+      : 'Share link copied to clipboard',
+    );
+    setTimeout(() => setShareToast(null), 5000);
   }, []);
 
   // Merge import: imports graphs alongside existing workspace
@@ -550,7 +578,28 @@ export function Toolbar() {
               </svg>
             </button>
           </Tooltip>
+          <Tooltip label="Copy share link — anyone with the URL gets this graph">
+            <button className={styles.toolbarBtn} onClick={handleShareLink}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+              </svg>
+            </button>
+          </Tooltip>
         </div>
+        {shareToast && (
+          <div style={{
+            padding: '4px 14px',
+            fontSize: '9px',
+            color: shareToast.startsWith('Copy failed') ? 'var(--danger)' : 'var(--success)',
+            fontFamily: 'var(--font-mono)',
+          }}>
+            {shareToast}
+          </div>
+        )}
         <Tooltip label="Merge import — add graphs from another file without replacing current workspace">
           <button className={styles.toolbarBtn} onClick={handleMergeImport} style={{ width: '100%', justifyContent: 'center', fontSize: '10px' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

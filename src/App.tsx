@@ -37,6 +37,7 @@ import { useEditorStore } from './store/editorStore';
 import { useSettingsStore } from './store/settingsStore';
 import { isOnUIPanel } from './utils/uiDetection';
 import { seedStarterGraph } from './utils/starterGraph';
+import { decodeShareParam, extractShareParam, clearShareParamFromLocation } from './utils/shareUrl';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useLiveExecution } from './hooks/useLiveExecution';
 import { useRemoteAutoDispatch } from './hooks/useRemoteAutoDispatch';
@@ -177,10 +178,22 @@ export default function App() {
     // still runs once; listed to satisfy the React Compiler dependency check.
   }, [saveTrigger, setFindReplaceOpen, setValidationOpen, setProfilingOpen, setSettingsOpen, setDebugOpen, setGraphMetaOpen, setTimelineOpen, setUndoHistoryOpen, setCheckpointsOpen, setNodeSearchOpen, setDependencyGraphOpen, setMacroOpen, setHelpGuideOpen, setKeyboardShortcutsOpen]);
 
-  // Load persisted graph from IndexedDB (async) or seed demo nodes
+  // Load persisted graph from IndexedDB (async) or seed demo nodes.
+  // A share link (#g=…) takes priority: it imports as the active graph.
   useEffect(() => {
     const store = useEditorStore.getState();
-    store.loadFromStorageAsync().then((loaded) => {
+    const shareParam = extractShareParam(window.location.hash);
+    store.loadFromStorageAsync().then(async (loaded) => {
+      if (shareParam) {
+        const shared = await decodeShareParam(shareParam);
+        if (shared) {
+          store.importWorkflow(shared);
+          clearShareParamFromLocation();
+          store.executeGraph();
+          return;
+        }
+        clearShareParamFromLocation();
+      }
       if (!loaded) {
         seedStarterGraph(store);
       }
