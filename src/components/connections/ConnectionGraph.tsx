@@ -6,6 +6,7 @@ import { useEditorStore } from '../../store/editorStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { Pipe } from './Pipe';
 import { PendingPipe } from './PendingPipe';
+import { InstancedConnectionLines } from './InstancedConnectionLines';
 import { getUpstreamPath, getDownstreamPath } from '../../utils/profiling';
 import type { Connection } from '../../types';
 
@@ -40,78 +41,6 @@ export const ConnectionGraph = memo(function ConnectionGraph() {
   const connLodMap = useRef<Map<string, ConnectionLOD>>(new Map());
 
   const groups = useEditorStore(s => s.groups);
-
-  useFrame(() => {
-    _projMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-    _frustum.setFromProjectionMatrix(_projMatrix);
-
-    const map = connLodMap.current;
-    const camPos = camera.position;
-
-    for (const conn of connList) {
-      const src = nodes[conn.sourceNodeId];
-      const tgt = nodes[conn.targetNodeId];
-
-      // If either endpoint node is missing, cull
-      if (!src || !tgt) {
-        map.set(conn.id, 'culled');
-        continue;
-      }
-
-      // Hide connections where both endpoints are in the same collapsed group
-      if (src.groupId && src.groupId === tgt.groupId && groups[src.groupId]?.collapsed) {
-        map.set(conn.id, 'culled');
-        continue;
-      }
-
-      // Hide connections where either endpoint is in a collapsed group
-      // (boundary connections would need rerouting, which is complex — for now hide them)
-      if ((src.groupId && groups[src.groupId]?.collapsed) ||
-          (tgt.groupId && groups[tgt.groupId]?.collapsed)) {
-        map.set(conn.id, 'culled');
-        continue;
-      }
-
-      // Compute midpoint of the connection for frustum/distance checks
-      _midpoint.set(
-        (src.position[0] + tgt.position[0]) * 0.5,
-        (src.position[1] + tgt.position[1]) * 0.5,
-        (src.position[2] + tgt.position[2]) * 0.5,
-      );
-
-      // Frustum cull: if midpoint is outside camera frustum, cull
-      // (conservative — long connections may still be visible, but midpoint
-      // is a good enough heuristic for typical node graphs)
-      if (!_frustum.containsPoint(_midpoint)) {
-        // Also check both endpoints before culling, in case the connection
-        // spans across the viewport. Use separate vector to preserve midpoint.
-        _endpointTest.set(src.position[0], src.position[1], src.position[2]);
-        const srcVisible = _frustum.containsPoint(_endpointTest);
-        _endpointTest.set(tgt.position[0], tgt.position[1], tgt.position[2]);
-        const tgtVisible = _frustum.containsPoint(_endpointTest);
-
-        if (!srcVisible && !tgtVisible) {
-          map.set(conn.id, 'culled');
-          continue;
-        }
-      }
-
-      // Distance-based LOD: midpoint is still valid (not overwritten by endpoint checks)
-      const dx = _midpoint.x - camPos.x;
-      const dy = _midpoint.y - camPos.y;
-      const dz = _midpoint.z - camPos.z;
-      const distSq = dx * dx + dy * dy + dz * dz;
-
-      map.set(conn.id, distSq > CONNECTION_LOD_DISTANCE_SQ ? 'lod' : 'full');
-    }
-
-    // Clean up stale entries
-    for (const id of map.keys()) {
-      if (!connections[id]) {
-        map.delete(id);
-      }
-    }
-  });
 
   const getConnectionLOD = useCallback((connId: string): ConnectionLOD => {
     return connLodMap.current.get(connId) ?? 'full';
@@ -185,6 +114,110 @@ export const ConnectionGraph = memo(function ConnectionGraph() {
     return set;
   }, [bundles, connList]);
 
+  // Bundle representatives stay individually rendered (the badge needs them)
+  const bundleRepresentativeIds = useMemo(() => {
+    if (!bundles) return null;
+    return new Set(bundles.map(b => b.representative.id));
+  }, [bundles]);
+
+  useFrame(() => {
+    _projMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    _frustum.setFromProjectionMatrix(_projMatrix);
+
+    const map = connLodMap.current;
+    const camPos = camera.position;
+    // Interactive state read imperatively — classification runs per frame,
+    // subscriptions here would defeat the purpose
+    const st = useEditorStore.getState();
+    const { selectedIds, hoveredConnectionId, isExecuting, executionStates } = st;
+
+    for (const conn of connList) {
+      // Bundled (non-representative) connections are not rendered at all
+      if (bundledConnIds && bundledConnIds.has(conn.id) && !bundleRepresentativeIds?.has(conn.id)) {
+        map.set(conn.id, 'culled');
+        continue;
+      }
+
+      const src = nodes[conn.sourceNodeId];
+      const tgt = nodes[conn.targetNodeId];
+
+      // If either endpoint node is missing, cull
+      if (!src || !tgt) {
+        map.set(conn.id, 'culled');
+        continue;
+      }
+
+      // Hide connections where both endpoints are in the same collapsed group
+      if (src.groupId && src.groupId === tgt.groupId && groups[src.groupId]?.collapsed) {
+        map.set(conn.id, 'culled');
+        continue;
+      }
+
+      // Hide connections where either endpoint is in a collapsed group
+      // (boundary connections would need rerouting, which is complex — for now hide them)
+      if ((src.groupId && groups[src.groupId]?.collapsed) ||
+          (tgt.groupId && groups[tgt.groupId]?.collapsed)) {
+        map.set(conn.id, 'culled');
+        continue;
+      }
+
+      // Compute midpoint of the connection for frustum/distance checks
+      _midpoint.set(
+        (src.position[0] + tgt.position[0]) * 0.5,
+        (src.position[1] + tgt.position[1]) * 0.5,
+        (src.position[2] + tgt.position[2]) * 0.5,
+      );
+
+      // Frustum cull: if midpoint is outside camera frustum, cull
+      // (conservative — long connections may still be visible, but midpoint
+      // is a good enough heuristic for typical node graphs)
+      if (!_frustum.containsPoint(_midpoint)) {
+        // Also check both endpoints before culling, in case the connection
+        // spans across the viewport. Use separate vector to preserve midpoint.
+        _endpointTest.set(src.position[0], src.position[1], src.position[2]);
+        const srcVisible = _frustum.containsPoint(_endpointTest);
+        _endpointTest.set(tgt.position[0], tgt.position[1], tgt.position[2]);
+        const tgtVisible = _frustum.containsPoint(_endpointTest);
+
+        if (!srcVisible && !tgtVisible) {
+          map.set(conn.id, 'culled');
+          continue;
+        }
+      }
+
+      // Distance-based LOD: midpoint is still valid (not overwritten by endpoint checks)
+      const dx = _midpoint.x - camPos.x;
+      const dy = _midpoint.y - camPos.y;
+      const dz = _midpoint.z - camPos.z;
+      const distSq = dx * dx + dy * dy + dz * dz;
+
+      if (distSq <= CONNECTION_LOD_DISTANCE_SQ) {
+        map.set(conn.id, 'full');
+        continue;
+      }
+
+      // Far connections render via InstancedConnectionLines — but anything
+      // the user is interacting with (or that carries extra visuals: labels,
+      // trace highlight, execution pulse) keeps its full Pipe.
+      const srcExec = executionStates[conn.sourceNodeId];
+      const forceFull =
+        selectedIds.has(conn.id) ||
+        hoveredConnectionId === conn.id ||
+        conn.label !== undefined ||
+        (selectedIds.has(conn.sourceNodeId) && selectedIds.has(conn.targetNodeId)) ||
+        (traceNodeSet !== null && traceNodeSet.has(conn.sourceNodeId) && traceNodeSet.has(conn.targetNodeId)) ||
+        (isExecuting && (srcExec === 'running' || srcExec === 'complete' || srcExec === 'error'));
+      map.set(conn.id, forceFull ? 'full' : 'lod');
+    }
+
+    // Clean up stale entries
+    for (const id of map.keys()) {
+      if (!connections[id]) {
+        map.delete(id);
+      }
+    }
+  });
+
   return (
     <group>
       {connList.map(conn => {
@@ -239,6 +272,8 @@ export const ConnectionGraph = memo(function ConnectionGraph() {
           </Html>
         </group>
       ))}
+      {/* All far-LOD connections batched into one LineSegments draw call */}
+      <InstancedConnectionLines lodMapRef={connLodMap} />
       <PendingPipe />
     </group>
   );

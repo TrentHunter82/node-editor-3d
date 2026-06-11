@@ -1,6 +1,6 @@
 import { memo, useCallback, useMemo } from 'react';
 import * as THREE from 'three';
-import { Text } from '@react-three/drei';
+import { BakedLabel } from './BakedLabel';
 import { useMatcap } from '../../hooks/useMatcap';
 import { NODE_TYPE_CONFIG } from '../../types';
 import type { EditorNode } from '../../types';
@@ -61,18 +61,14 @@ export const NodeLOD = memo(function NodeLOD({ node, selected, onSelect, showLab
         </mesh>
       )}
       {showLabel && (
-        <Text
+        <BakedLabel
+          text={node.title}
           position={[0, 0.26, 0]}
           rotation={[-Math.PI / 2, 0, 0]}
-          fontSize={0.04}
+          height={0.07}
           color="#c8d6e5"
-          anchorX="center"
-          anchorY="middle"
           maxWidth={nodeW - 0.1}
-          textAlign="center"
-        >
-          {node.title}
-        </Text>
+        />
       )}
     </group>
   );

@@ -1,5 +1,6 @@
 import { useRef, useState, useMemo, useCallback, useEffect, memo } from 'react';
-import { Html, Text } from '@react-three/drei';
+import { Html } from '@react-three/drei';
+import { BakedLabel } from './BakedLabel';
 import { useFrame } from '@react-three/fiber';
 import { useSpring, animated, to } from '@react-spring/three';
 import * as THREE from 'three';
@@ -402,25 +403,21 @@ export const NodeModule = memo(function NodeModule({ node, selected, onSelect, t
         <Port key={`out-${i}`} nodeId={node.id} portIndex={i} type="output" position={pos} />
       ))}
 
-      {/* Etched title — 3D text on node surface, oriented with the node */}
+      {/* Etched title — pre-baked label texture on the node surface, oriented with the node */}
       {!editing && (
-        <Text
-          position={[0, currentH / 2 + 0.008, 0]}
-          rotation={[-Math.PI / 2, 0, 0]}
-          fontSize={0.055}
-          color="#c8d6e5"
-          anchorX="center"
-          anchorY="middle"
-          maxWidth={nodeW - 0.12}
-          textAlign="center"
-          onDoubleClick={handleDoubleClick}
-        >
-          {(isCollapsed ? '\u25B8 ' : '')
+        <BakedLabel
+          text={(isCollapsed ? '\u25B8 ' : '')
             + (node.type === 'subgraph' ? '\u229E ' : '')
             + (node.type === 'subgraph-input' ? '\u25B7 ' : '')
             + (node.type === 'subgraph-output' ? '\u25C1 ' : '')
             + node.title}
-        </Text>
+          position={[0, currentH / 2 + 0.008, 0]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          height={0.077}
+          color="#c8d6e5"
+          maxWidth={nodeW - 0.12}
+          onDoubleClick={handleDoubleClick}
+        />
       )}
 
       {/* Rename input — temporary Html overlay shown only during inline editing */}

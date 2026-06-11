@@ -6,6 +6,7 @@ import { useFrame } from '@react-three/fiber';
 import { useEditorStore } from '../../store/editorStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { getPortWorldPos } from '../../utils/portPositions';
+import { computeControlPoints } from '../../utils/connectionGeometry';
 import { PORT_TYPE_COLORS } from '../../types';
 import type { Connection } from '../../types';
 import type { ThreeEvent } from '@react-three/fiber';
@@ -187,44 +188,12 @@ export const Pipe = memo(function Pipe({ connection, isTraced, getConnectionLOD 
   );
 
   // Compute control points based on connection style setting
-  const { midA, midB } = useMemo((): { midA: [number, number, number]; midB: [number, number, number] } => {
-    if (connectionStyle === 'straight') {
-      // Straight line: control points = start/end (linear bezier)
-      return { midA: [...start] as [number, number, number], midB: [...end] as [number, number, number] };
-    }
-    if (connectionStyle === 'right-angle') {
-      // Right-angle routing: go halfway horizontally, then turn
-      const midX = (start[0] + end[0]) / 2;
-      const lift = 0.05;
-      return {
-        midA: [midX, start[1] + lift, start[2]],
-        midB: [midX, end[1] + lift, end[2]],
-      };
-    }
-    if (connectionStyle === 'organic') {
-      // Organic: spline-like with perpendicular offsets for a natural, flowing feel
-      const dx = end[0] - start[0];
-      const dy = end[1] - start[1];
-      const dz = end[2] - start[2];
-      const dist = Math.sqrt(dx * dx + dz * dz);
-      const spread = Math.max(0.3, dist * 0.3);
-      // Offset control points perpendicular to the connection direction
-      const perpX = dist > 0.001 ? -dz / dist : 0;
-      const perpZ = dist > 0.001 ? dx / dist : 1;
-      const offset = spread * 0.4;
-      return {
-        midA: [start[0] + dx * 0.3 + perpX * offset, start[1] + dy * 0.3 + 0.15, start[2] + dz * 0.3 + perpZ * offset],
-        midB: [start[0] + dx * 0.7 - perpX * offset, start[1] + dy * 0.7 + 0.15, start[2] + dz * 0.7 - perpZ * offset],
-      };
-    }
-    // Default: bezier with horizontal spread
-    const dx = Math.abs(end[0] - start[0]) * 0.4;
-    return {
-      midA: [start[0] + dx, start[1] + 0.15, start[2]],
-      midB: [end[0] - dx, end[1] + 0.15, end[2]],
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [start[0], start[1], start[2], end[0], end[1], end[2], connectionStyle]);
+  // (shared with InstancedConnectionLines so far-LOD lines match exactly)
+  const { midA, midB } = useMemo(
+    () => computeControlPoints(start, end, connectionStyle),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [start[0], start[1], start[2], end[0], end[1], end[2], connectionStyle],
+  );
 
   // Shared bezier curve — single instance reused for hit geometry, pulse animation, and label positioning.
   // Reuse the same CubicBezierCurve3 object by updating control points in-place to reduce GC pressure
@@ -274,10 +243,12 @@ export const Pipe = memo(function Pipe({ connection, isTraced, getConnectionLOD 
 
   // Animate data flow pulse + flow dashes along the curve + LOD visibility toggling
   useFrame(({ clock, invalidate }) => {
-    // Imperatively toggle visibility based on connection LOD
+    // Imperatively toggle visibility based on connection LOD.
+    // 'lod' connections render via InstancedConnectionLines (one batched
+    // draw call) — the full Pipe shows only at 'full' classification.
     if (groupRef.current && getConnectionLOD) {
       const lod = getConnectionLOD(connection.id);
-      groupRef.current.visible = lod !== 'culled';
+      groupRef.current.visible = lod === 'full';
     }
 
     // Animate flow dashes with easing (dashOffset on the overlay line material)
