@@ -3,21 +3,22 @@
 Working notes for picking up where the last session left off. Not part of the app;
 safe to delete once the open items below are done.
 
-_Last updated: 2026-06-10 (session 4 — "all 4 phases" world-class build-out; 16 commits, NOT yet pushed)_
+_Last updated: 2026-06-11 (session 4 wrap — "all 4 phases" build-out pushed and DEPLOYED)_
 
-## Current state (all green, NOT pushed)
+## Current state (all green, pushed, LIVE)
 
+- **Live at https://trenthunter82.github.io/node-editor-3d/** — CI run #1
+  (attempt 2) green end-to-end; every push to `main` now redeploys Pages
+  automatically. (Pages source = "GitHub Actions", enabled manually once in
+  repo Settings — the workflow's `enablement: true` can't create the site on
+  a user repo, so don't remove that manual setting.)
 - **Builds clean:** `npm run build` → exit 0 (chunk-size warning only).
 - **Lint clean:** `npm run lint` → 0 problems (now includes `import/no-cycle`).
-- **All tests pass:** `npm test` → **9170/9170 across 249 files.** One or two
-  wall-clock perf tests (`phase34-features` execution-timeout group) flake on a
-  loaded machine — always re-run in isolation before chasing them. CI uses
-  `--retry=2` for this.
-- **16 local commits ahead of `origin/main`** (`35c045e`…). **The push was
-  blocked by the environment's permission gate** (pushing to main triggers the
-  new Pages deploy). First push will: run CI, deploy to GitHub Pages
-  (`configure-pages` with `enablement: true` creates the site), and publish at
-  `https://trenthunter82.github.io/node-editor-3d/`.
+- **All tests pass:** `npm test` → **9171/9171 across 249 files** — verified on
+  both this PC and ubuntu CI. One or two wall-clock perf tests
+  (`phase34-features` execution-timeout group) flake on a loaded machine —
+  always re-run in isolation before chasing them. CI uses `--retry=2` for this.
+- **`main` pushed and up to date at `3ec0d11`.** Working tree clean.
 
 ## Session 4 (2026-06-10): the four-phase build-out
 
@@ -72,23 +73,20 @@ _Last updated: 2026-06-10 (session 4 — "all 4 phases" world-class build-out; 1
 
 ## Open items / next steps
 
-1. **PUSH.** `git push origin main` from a terminal (interactive — credential
-   manager may prompt; HTTPS only on this PC). Then check the Actions run and
-   the Pages URL. Repo Settings → Pages should show "GitHub Actions" source
-   (the workflow tries to enable it automatically).
-2. **Live-browser verification** of the new features (no Playwright in repo;
+1. **Live-browser verification** of the new features (no Playwright in repo;
    `npm i -D playwright --no-save`, drive `channel:'msedge'`). Worth checking:
    starter graph renders clean, template instantiation, share-link round-trip,
    image-preview node with a real URL, comfy-workflow against a local ComfyUI.
-3. **Real ComfyUI smoke test** — Trent has local ComfyUI installs
+   Can run against the deployed URL or the local dev server.
+2. **Real ComfyUI smoke test** — Trent has local ComfyUI installs
    (`C:\Users\Trent\From-Old-PC\`, models at `D:\models`). Settings → Remote
    Execution → ComfyUI; needs `--enable-cors-header` on the ComfyUI server if
    the browser blocks /view image loads.
-4. **Share links for subgraph-containing graphs** — needs inner-graph bundling
+3. **Share links for subgraph-containing graphs** — needs inner-graph bundling
    + id remapping on import (clipboard code in coreSlice paste is the model).
-5. **Text rendering at scale** (pre-baked label textures) and **instanced
+4. **Text rendering at scale** (pre-baked label textures) and **instanced
    connection rendering** — the remaining items for the 1000-node target.
-6. **Presentation/"mini-app" view** and **copy node value as JSON/CSV** —
+5. **Presentation/"mini-app" view** and **copy node value as JSON/CSV** —
    highest-leverage UX items from CREATIVE-USE-CASES.md not yet built.
 
 ## Environment gotchas (read before starting)
