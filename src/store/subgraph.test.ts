@@ -989,3 +989,32 @@ describe('subgraph round-trip: create → enter → add nodes → exit → execu
     expect(getState().nodes[srcId]).toBeDefined();
   });
 });
+
+// ===========================================================================
+// Nested subgraph execution from an ancestor level (regression)
+// ===========================================================================
+describe('nested subgraph execution from the top level', () => {
+  beforeEach(() => { resetStore(); });
+
+  it('resolves defs stored on inner GraphData when executing from the parent', () => {
+    // source(42) → [Outer [Nested [source]]] → output, executed from the top.
+    // Nested defs live on the inner graph's GraphData (not the active graph's
+    // subgraphDefs) — execution must merge them when recursing.
+    const src = getState().addNode('source', [0, 0, 0]);
+    getState().updateNodeData(src, 'value', 42);
+    const out = getState().addNode('output', [5, 0, 0]);
+    getState().addConnection(src, 0, out, 0);
+    getState().setSelection(new Set([src]));
+    const sgId = getState().convertSelectionToSubgraph('Outer')!;
+
+    getState().enterSubgraph(sgId);
+    const innerSrc = Object.values(getState().nodes).find(n => n.type === 'source')!;
+    getState().setSelection(new Set([innerSrc.id]));
+    getState().convertSelectionToSubgraph('Nested');
+    getState().exitSubgraph();
+
+    getState().executeGraph();
+    expect(Object.keys(getState().executionErrors)).toEqual([]);
+    expect(getState().nodeOutputs[sgId][0]).toBe(42);
+  });
+});

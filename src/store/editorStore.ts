@@ -319,7 +319,9 @@ export interface EditorState {
   /** Batch set sizes for multiple nodes. No undo — for hot resize drag loop. */
   setNodeSizes: (sizes: Record<string, { width: number; height: number }>) => void;
   // Import/Export
-  importWorkflow: (data: { nodes: Record<string, EditorNode>; connections: Record<string, Connection>; groups?: Record<string, NodeGroup>; customNodeDefs?: Record<string, CustomNodeDef> }) => void;
+  importWorkflow: (data: { nodes: Record<string, EditorNode>; connections: Record<string, Connection>; groups?: Record<string, NodeGroup>; customNodeDefs?: Record<string, CustomNodeDef>; subgraphDefs?: Record<string, SubgraphNodeDef>; innerGraphs?: Record<string, GraphData>; innerGraphTabs?: Record<string, GraphTab>; errorStrategy?: ErrorStrategy }) => void;
+  /** Recursively bundle inner graphs of all subgraph nodes in the active graph (for share links / export). */
+  collectInnerGraphsForExport: () => { innerGraphs: Record<string, GraphData>; innerGraphTabs: Record<string, GraphTab> };
   // Custom node definitions
   customNodeDefs: Record<string, CustomNodeDef>;
   addCustomNodeDef: (def: Omit<CustomNodeDef, 'id'>) => string;

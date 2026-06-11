@@ -16,6 +16,10 @@ export interface LegacyGraphData {
   groups?: Record<string, NodeGroup>;
   customNodeDefs?: Record<string, CustomNodeDef>;
   subgraphDefs?: Record<string, SubgraphNodeDef>;
+  /** Inner graphs of subgraph nodes (recursively bundled), keyed by graph id */
+  innerGraphs?: Record<string, GraphData>;
+  /** Tab metadata for the bundled inner graphs */
+  innerGraphTabs?: Record<string, GraphTab>;
 }
 
 /** Multi-graph storage format (Phase 6+) */
@@ -295,6 +299,16 @@ export function importFromJSON(jsonString: string): LegacyGraphData | null {
     if (data.groups !== undefined && !isPlainObject(data.groups)) return null;
     if (data.customNodeDefs !== undefined && !isPlainObject(data.customNodeDefs)) return null;
     if (data.subgraphDefs !== undefined && !isPlainObject(data.subgraphDefs)) return null;
+    if (data.innerGraphs !== undefined) {
+      if (!isPlainObject(data.innerGraphs)) return null;
+      // Each bundled inner graph must at least be a graph-shaped object
+      for (const inner of Object.values(data.innerGraphs)) {
+        if (!isPlainObject(inner)) return null;
+        if (!isPlainObject(inner.nodes)) return null;
+        if (!isPlainObject(inner.connections)) return null;
+      }
+    }
+    if (data.innerGraphTabs !== undefined && !isPlainObject(data.innerGraphTabs)) return null;
     return data as unknown as LegacyGraphData;
   } catch {
     return null;

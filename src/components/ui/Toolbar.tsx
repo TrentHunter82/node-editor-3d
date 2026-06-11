@@ -276,13 +276,15 @@ export function Toolbar() {
   const [shareToast, setShareToast] = useState<string | null>(null);
   const handleShareLink = useCallback(async () => {
     const s = useEditorStore.getState();
-    const hasSubgraphs = Object.values(s.nodes).some(n => n.type === 'subgraph');
+    // Bundle subgraph internals (recursively) so the link round-trips them
+    const { innerGraphs, innerGraphTabs } = s.collectInnerGraphsForExport();
     const url = await buildShareUrl({
       nodes: s.nodes,
       connections: s.connections,
       groups: s.groups,
       customNodeDefs: s.customNodeDefs,
       ...(Object.keys(s.subgraphDefs).length > 0 ? { subgraphDefs: s.subgraphDefs } : {}),
+      ...(Object.keys(innerGraphs).length > 0 ? { innerGraphs, innerGraphTabs } : {}),
     });
     let copied = false;
     try {
@@ -292,9 +294,7 @@ export function Toolbar() {
       console.log('[share-url]', url);
     }
     setShareToast(
-      !copied ? 'Copy failed — link logged to browser console'
-      : hasSubgraphs ? 'Link copied — note: subgraph internals are not included'
-      : 'Share link copied to clipboard',
+      copied ? 'Share link copied to clipboard' : 'Copy failed — link logged to browser console',
     );
     setTimeout(() => setShareToast(null), 5000);
   }, []);

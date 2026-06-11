@@ -119,7 +119,9 @@ export interface CoreActions {
   paste: () => void;
   canPaste: () => boolean;
   clearGraph: () => void;
-  importWorkflow: (data: { nodes: Record<string, EditorNode>; connections: Record<string, Connection>; groups?: Record<string, NodeGroup>; customNodeDefs?: Record<string, CustomNodeDef>; subgraphDefs?: Record<string, SubgraphNodeDef>; errorStrategy?: ErrorStrategy }) => void;
+  importWorkflow: (data: { nodes: Record<string, EditorNode>; connections: Record<string, Connection>; groups?: Record<string, NodeGroup>; customNodeDefs?: Record<string, CustomNodeDef>; subgraphDefs?: Record<string, SubgraphNodeDef>; innerGraphs?: Record<string, GraphData>; innerGraphTabs?: Record<string, GraphTab>; errorStrategy?: ErrorStrategy }) => void;
+  /** Recursively bundle inner graphs of all subgraph nodes in the active graph (for share links / export). */
+  collectInnerGraphsForExport: () => { innerGraphs: Record<string, GraphData>; innerGraphTabs: Record<string, GraphTab> };
   importAllGraphs: (storage: { version: number; graphs: Record<string, GraphData>; graphTabs: Record<string, GraphTab>; activeGraphId: string; graphOrder: string[]; templates?: Record<string, unknown>; subgraphDefs?: Record<string, SubgraphNodeDef> }) => void;
 }
 
@@ -500,6 +502,30 @@ export function createCoreActions(
 
     canPaste: () => clipboard !== null && clipboard.nodes.length > 0,
 
+    collectInnerGraphsForExport: () => {
+      const state = get();
+      const inactiveGraphs = getInactiveGraphs();
+      const innerGraphs: Record<string, GraphData> = {};
+      const innerGraphTabs: Record<string, GraphTab> = {};
+      const visit = (nodes: Record<string, EditorNode>) => {
+        for (const node of Object.values(nodes) as EditorNode[]) {
+          if (node.type !== 'subgraph') continue;
+          const innerGraphId = node.data.innerGraphId as string | undefined;
+          if (!innerGraphId || innerGraphs[innerGraphId]) continue;
+          const inner = inactiveGraphs[innerGraphId];
+          if (!inner) continue;
+          innerGraphs[innerGraphId] = structuredClone(inner);
+          if (state.graphTabs[innerGraphId]) {
+            innerGraphTabs[innerGraphId] = structuredClone(state.graphTabs[innerGraphId]);
+          }
+          // Nested subgraphs: bundle their inner graphs too
+          visit(inner.nodes);
+        }
+      };
+      visit(state.nodes);
+      return { innerGraphs, innerGraphTabs };
+    },
+
     clearGraph: () => {
       cancelAutoExecute();
       const state = get();
@@ -551,10 +577,70 @@ export function createCoreActions(
       // Migrate node schemas and validate graph data (same as importAllGraphs)
       migrateAllNodes(data.nodes);
       validateGraphData({ nodes: data.nodes, connections: cleanConnections, groups, customNodeDefs: customDefs });
+      // Bundled inner graphs (subgraph internals from share links / exports):
+      // their ids and node/connection ids must never collide with newly
+      // generated ids, so feed them into the id-counter sync below.
+      const bundledInnerGraphs = data.innerGraphs ?? {};
+      const innerExtraKeys: string[] = [];
+      for (const [gId, g] of Object.entries(bundledInnerGraphs)) {
+        innerExtraKeys.push(gId);
+        innerExtraKeys.push(...Object.keys(g.nodes), ...Object.keys(g.connections));
+      }
       syncNextId(data.nodes, cleanConnections, groups, [
         ...Object.keys(currentState.graphTabs),
         ...Object.keys(currentState.templates),
+        ...innerExtraKeys,
       ]);
+
+      // Remap bundled inner graphs to fresh graph ids — share links come from
+      // foreign workspaces, so their graph ids could clobber other tabs here.
+      // (Mirrors the clipboard paste model; node ids inside each graph keep
+      // their ids since each graph is its own node namespace.)
+      const graphIdMap = new Map<string, string>();
+      for (const oldId of Object.keys(bundledInnerGraphs)) graphIdMap.set(oldId, genGraphId());
+      // Subgraph names by (old) inner graph id, for tab fallback names
+      const defNameByOldGraphId = new Map<string, string>();
+      for (const def of Object.values(data.subgraphDefs ?? {})) defNameByOldGraphId.set(def.innerGraphId, def.name);
+      for (const g of Object.values(bundledInnerGraphs)) {
+        for (const def of Object.values(g.subgraphDefs ?? {})) defNameByOldGraphId.set(def.innerGraphId, def.name);
+      }
+      const remapSubgraphRefs = (nodes: Record<string, EditorNode>, defs?: Record<string, SubgraphNodeDef>) => {
+        for (const node of Object.values(nodes)) {
+          if (node.type !== 'subgraph') continue;
+          const oldId = node.data.innerGraphId as string | undefined;
+          if (oldId && graphIdMap.has(oldId)) node.data.innerGraphId = graphIdMap.get(oldId)!;
+        }
+        if (defs) {
+          for (const def of Object.values(defs)) {
+            if (graphIdMap.has(def.innerGraphId)) def.innerGraphId = graphIdMap.get(def.innerGraphId)!;
+          }
+        }
+      };
+      const importedSubgraphDefs = structuredClone(data.subgraphDefs ?? {});
+      remapSubgraphRefs(data.nodes, importedSubgraphDefs);
+
+      const inactiveGraphs = getInactiveGraphs();
+      const createdInnerGraphIds: string[] = [];
+      const newInnerTabs: Record<string, GraphTab> = {};
+      for (const [oldId, innerGraph] of Object.entries(bundledInnerGraphs)) {
+        const newId = graphIdMap.get(oldId)!;
+        const clone = structuredClone(innerGraph);
+        clone.connections = sanitizeConnections(clone.nodes, clone.connections);
+        migrateAllNodes(clone.nodes);
+        remapSubgraphRefs(clone.nodes, clone.subgraphDefs);
+        // Top-level inner graphs hang off the graph being imported into;
+        // nested ones hang off their (remapped) parent inner graph.
+        clone.parentGraphId = clone.parentGraphId && graphIdMap.has(clone.parentGraphId)
+          ? graphIdMap.get(clone.parentGraphId)!
+          : currentState.activeGraphId;
+        inactiveGraphs[newId] = clone;
+        createdInnerGraphIds.push(newId);
+        const tab = data.innerGraphTabs?.[oldId];
+        newInnerTabs[newId] = tab
+          ? { ...structuredClone(tab), id: newId }
+          : { id: newId, name: defNameByOldGraphId.get(oldId) ?? 'Subgraph', createdAt: Date.now() };
+      }
+
       // Clear execution timeouts and cache from previous graph
       clearExecutionTimeoutsAndCache(getActiveUndoGraphId());
       set(s => {
@@ -566,7 +652,10 @@ export function createCoreActions(
         s.connections = cleanConnections;
         s.groups = groups;
         s.customNodeDefs = customDefs;
-        s.subgraphDefs = (data as { subgraphDefs?: Record<string, SubgraphNodeDef> }).subgraphDefs ?? {};
+        s.subgraphDefs = importedSubgraphDefs;
+        for (const [gId, tab] of Object.entries(newInnerTabs)) {
+          s.graphTabs[gId] = tab;
+        }
         s.checkpoints = {};
         s.graphVariables = {};
         s.executionStats = executionInitialStats;
@@ -577,6 +666,10 @@ export function createCoreActions(
         s.breadcrumbStack = [];
         s.executionHistory = [];
       });
+      // Track created inner graphs so undo can clean them up (prevent orphan leak)
+      if (createdInnerGraphIds.length > 0) {
+        markCreatedInactiveGraphs(createdInnerGraphIds);
+      }
     },
 
     importAllGraphs: (storage) => {

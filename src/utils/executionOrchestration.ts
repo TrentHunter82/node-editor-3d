@@ -286,9 +286,16 @@ function executeSubgraphNode(
   const remainingMs = (maxExecutionMs && maxExecutionMs > 0 && parentStart !== undefined)
     ? Math.max(1, maxExecutionMs - (performance.now() - parentStart))
     : maxExecutionMs;
+  // Nested subgraph defs live on the inner graph's own GraphData — merge them
+  // into the context so executing from an ancestor level can resolve them
+  // (the caller's context only carries the graph-being-executed's defs).
+  const innerContext: SubgraphContext =
+    innerGraph.subgraphDefs && Object.keys(innerGraph.subgraphDefs).length > 0
+      ? { subgraphDefs: { ...context.subgraphDefs, ...innerGraph.subgraphDefs }, getInnerGraph: context.getInnerGraph }
+      : context;
   let result: ExecutionResult;
   try {
-    result = executeGraph(innerNodes, innerConnections, undefined, context, depth + 1, errorStrategy, undefined, remainingMs);
+    result = executeGraph(innerNodes, innerConnections, undefined, innerContext, depth + 1, errorStrategy, undefined, remainingMs);
   } finally {
     setGraphVariablesContext(savedVars);
   }
