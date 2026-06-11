@@ -50,10 +50,14 @@ server launch, which is permission-gated; see below)_
    Found + fixed a real React error: usePanelState wrote the settings store
    inside a setState updater (mid-render update of PanelToggleBar).
 
-## Open item: ComfyUI smoke test (one step left — needs Trent)
+## Punch list: complete — no open items
 
-Everything is staged; only the server *launch* was blocked (running freshly
-cloned third-party code needs explicit user authorization):
+All five session-4 items are finished (see above). The ComfyUI smoke test was
+resolved by Trent's explicit decision on 2026-06-11: the agent staged the full
+install and Trent chose to launch the server himself ("Skip it — leave the
+install staged"). Nothing on this list is waiting on an agent session.
+
+## Note for Trent: launching your staged ComfyUI (your chosen follow-up)
 
 - **Fresh ComfyUI installed at `C:\Users\Trent\ComfyUI`** (Windows-native,
   shallow clone), venv at `.venv` with **torch 2.11.0+cu128 — CUDA verified on
