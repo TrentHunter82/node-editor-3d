@@ -70,13 +70,12 @@ let lastModalFocusTrigger: Element | null = null;
 /** Panel state hook that persists open/closed to settingsStore and syncs external changes */
 function usePanelState(panelId: string): [boolean, Dispatch<SetStateAction<boolean>>] {
   const [open, setOpenLocal] = useState(() => useSettingsStore.getState().openPanels.includes(panelId));
-  const setOpen: Dispatch<SetStateAction<boolean>> = useCallback((v) => {
-    setOpenLocal(prev => {
-      const next = typeof v === 'function' ? v(prev) : v;
-      useSettingsStore.getState().setPanelOpen(panelId, next);
-      return next;
-    });
-  }, [panelId]);
+  // Persist local → settings in an effect, NOT inside the setState updater:
+  // updaters run during render, and writing the settings store there re-renders
+  // its subscribers (PanelToggleBar) mid-render — React flags it as an error.
+  useEffect(() => {
+    useSettingsStore.getState().setPanelOpen(panelId, open);
+  }, [panelId, open]);
   // Sync from external changes (e.g. PanelToggleBar, workspace presets)
   useEffect(() => {
     return useSettingsStore.subscribe((state) => {
@@ -86,7 +85,7 @@ function usePanelState(panelId: string): [boolean, Dispatch<SetStateAction<boole
       setOpenLocal(prev => (prev === shouldBeOpen ? prev : shouldBeOpen));
     });
   }, [panelId]);
-  return [open, setOpen];
+  return [open, setOpenLocal];
 }
 
 export default function App() {
