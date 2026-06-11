@@ -18,6 +18,7 @@ const PANEL_TOGGLES: PanelToggle[] = [
   { id: 'checkpoints', label: 'Ckpt', type: 'panel' },
   { id: 'dependencyGraph', label: 'Deps', type: 'panel' },
   { id: 'macro', label: 'Macro', type: 'panel' },
+  { id: 'presentation', label: 'Present', type: 'panel' },
   { id: 'minimap', label: 'Map', type: 'setting' },
   { id: 'inspector', label: 'Insp', type: 'setting' },
   { id: 'toolbar', label: 'Tools', type: 'setting' },
@@ -54,6 +55,7 @@ export function PanelToggleBar() {
         checkpoints: window.__openCheckpoints,
         dependencyGraph: window.__openDependencyGraph,
         macro: window.__openMacroPanel,
+        presentation: window.__openPresentation,
       };
       const opener = openerMap[toggle.id];
       if (opener) opener();

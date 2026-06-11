@@ -589,6 +589,14 @@ export function Toolbar() {
               </svg>
             </button>
           </Tooltip>
+          <Tooltip label="Presentation view — hide the wiring, show inputs and results as a mini-app">
+            <button className={styles.toolbarBtn} onClick={() => window.__openPresentation?.()}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="2" y="3" width="20" height="14" rx="2" />
+                <path d="M8 21h8M12 17v4" />
+              </svg>
+            </button>
+          </Tooltip>
         </div>
         {shareToast && (
           <div style={{

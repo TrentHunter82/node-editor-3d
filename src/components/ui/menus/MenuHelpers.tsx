@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useEditorStore } from '../../../store/editorStore';
 import styles from '../../../styles/panels.module.css';
 import type { ExecFn } from './menuShared';
+import { resolveNodeExportValue, valueToJSON, valueToCSV, copyTextToClipboard } from '../../../utils/valueExport';
 
 export function CtxIcon({ d }: { d: string }) {
   return (
@@ -31,6 +32,52 @@ export function TraceMenuItem({ nodeId, exec }: { nodeId: string; exec: ExecFn }
       <CtxIcon d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 14a4 4 0 1 1 4-4 4 4 0 0 1-4 4zm0-6a2 2 0 1 0 2 2 2 2 0 0 0-2-2z" />
       {isTracing ? 'Stop Tracing' : 'Trace Data Flow'}
     </button>
+  );
+}
+
+/**
+ * "Copy Value as JSON / CSV" — machine-usable export of a node's computed
+ * value (resolveNodeExportValue handles sinks like `display` by reading the
+ * incoming edge). CSV is offered only when the value has a tabular form.
+ */
+export function CopyValueMenuItems({ nodeId, exec }: { nodeId: string; exec: ExecFn }) {
+  // Select the raw maps (stable references) and derive outside the selector —
+  // resolveNodeExportValue can mint a new object per call (multi-output case).
+  const nodes = useEditorStore(s => s.nodes);
+  const connections = useEditorStore(s => s.connections);
+  const nodeOutputs = useEditorStore(s => s.nodeOutputs);
+  const value = resolveNodeExportValue(nodeId, nodes, connections, nodeOutputs);
+  if (value === undefined) return null;
+
+  const json = valueToJSON(value);
+  const csv = valueToCSV(value);
+  if (json === null && csv === null) return null;
+
+  return (
+    <>
+      {json !== null && (
+        <button
+          className={styles.contextMenuItem}
+          role="menuitem"
+          tabIndex={-1}
+          onClick={() => exec(() => copyTextToClipboard(json))}
+        >
+          <CtxIcon d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M8 2h8v4H8z" />
+          Copy Value as JSON
+        </button>
+      )}
+      {csv !== null && (
+        <button
+          className={styles.contextMenuItem}
+          role="menuitem"
+          tabIndex={-1}
+          onClick={() => exec(() => copyTextToClipboard(csv))}
+        >
+          <CtxIcon d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18" />
+          Copy Value as CSV
+        </button>
+      )}
+    </>
   );
 }
 

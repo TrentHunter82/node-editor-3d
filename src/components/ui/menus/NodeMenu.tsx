@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { useEditorStore } from '../../../store/editorStore';
 import { useSettingsStore } from '../../../store/settingsStore';
 import styles from '../../../styles/panels.module.css';
-import { CtxIcon, TraceMenuItem, CopyResultMenuItem, BreakpointConditionMenuItem, DisconnectAllMenuItem } from './MenuHelpers';
+import { CtxIcon, TraceMenuItem, CopyResultMenuItem, CopyValueMenuItems, BreakpointConditionMenuItem, DisconnectAllMenuItem } from './MenuHelpers';
 import type { ExecFn } from './menuShared';
 
 function PresetMenu({ nodeId, node, exec }: { nodeId: string; node: { type: string; data: Record<string, unknown> }; exec: ExecFn }) {
@@ -313,6 +313,9 @@ export function NodeMenu({ nodeId, exec }: { nodeId: string; exec: ExecFn }) {
 
       {/* Copy result to clipboard */}
       <CopyResultMenuItem nodeId={nodeId} exec={exec} />
+
+      {/* Copy computed value as JSON / CSV (works for sinks via incoming edge) */}
+      <CopyValueMenuItems nodeId={nodeId} exec={exec} />
 
       {/* Select Connected — select upstream/downstream/all connected nodes */}
       {!isBoundary && (

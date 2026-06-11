@@ -363,6 +363,7 @@ export function SearchPalette({ open, onClose, placeAt }: SearchPaletteProps) {
         { id: 'toggle-toolbar', label: 'Toggle Toolbar (T)', action: () => { useSettingsStore.getState().toggleToolbarVisible(); close(); } },
         { id: 'graph-metadata', label: 'Edit Graph Info (Title, Description, Tags)', action: () => { close(); window.__openGraphMeta?.(); } },
         { id: 'checkpoints', label: 'Graph Checkpoints (Save / Restore)', action: () => { close(); window.__openCheckpoints?.(); } },
+        { id: 'presentation', label: 'Presentation View (Mini-App)', action: () => { close(); window.__openPresentation?.(); } },
       ];
 
       for (const a of actions) {

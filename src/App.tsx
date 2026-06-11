@@ -59,6 +59,7 @@ const DependencyGraphPanel = lazy(() => import('./components/ui/DependencyGraphP
 const MacroPanel = lazy(() => import('./components/ui/MacroPanel').then(m => ({ default: m.MacroPanel })));
 const HelpGuidePanel = lazy(() => import('./components/ui/HelpGuidePanel').then(m => ({ default: m.HelpGuidePanel })));
 const KeyboardShortcutsPanel = lazy(() => import('./components/ui/KeyboardShortcutsPanel').then(m => ({ default: m.KeyboardShortcutsPanel })));
+const PresentationPanel = lazy(() => import('./components/ui/PresentationPanel').then(m => ({ default: m.PresentationPanel })));
 
 // Singleton tracker for the element focused before a modal/panel opened. App is
 // a single root instance, so module scope is the natural home for this — and it
@@ -109,6 +110,7 @@ export default function App() {
   const [macroOpen, setMacroOpen] = usePanelState('macro');
   const [helpGuideOpen, setHelpGuideOpen] = usePanelState('helpGuide');
   const [keyboardShortcutsOpen, setKeyboardShortcutsOpen] = usePanelState('keyboardShortcuts');
+  const [presentationOpen, setPresentationOpen] = usePanelState('presentation');
   const uiScale = useSettingsStore(s => s.uiScale);
   const theme = useSettingsStore(s => s.theme);
   const postProcessing = useSettingsStore(s => s.postProcessing);
@@ -150,6 +152,7 @@ export default function App() {
     window.__openMacroPanel = () => { save(); setMacroOpen(true); };
     window.__openHelpGuide = () => { save(); setHelpGuideOpen(true); };
     window.__openKeyboardShortcuts = () => { save(); setKeyboardShortcutsOpen(true); };
+    window.__openPresentation = () => { save(); setPresentationOpen(true); };
     window.__applyWorkspacePreset = (openPanels, minimapVisible, inspectorVisible) => {
       const ss = useSettingsStore.getState();
       ss.setMinimapVisible(minimapVisible);
@@ -175,10 +178,10 @@ export default function App() {
         setter(openPanels.includes(name));
       }
     };
-    return () => { window.__openFindReplace = undefined; window.__openValidation = undefined; window.__openProfiling = undefined; window.__openSettings = undefined; window.__openDebug = undefined; window.__openGraphMeta = undefined; window.__openTimeline = undefined; window.__openUndoHistory = undefined; window.__openCheckpoints = undefined; window.__openCustomNodeEditor = undefined; window.__toggleMinimap = undefined; window.__toggleInspector = undefined; window.__toggleGrid = undefined; window.__openNodeSearch = undefined; window.__openDependencyGraph = undefined; window.__openMacroPanel = undefined; window.__openHelpGuide = undefined; window.__openKeyboardShortcuts = undefined; window.__applyWorkspacePreset = undefined; };
+    return () => { window.__openFindReplace = undefined; window.__openValidation = undefined; window.__openProfiling = undefined; window.__openSettings = undefined; window.__openDebug = undefined; window.__openGraphMeta = undefined; window.__openTimeline = undefined; window.__openUndoHistory = undefined; window.__openCheckpoints = undefined; window.__openCustomNodeEditor = undefined; window.__toggleMinimap = undefined; window.__toggleInspector = undefined; window.__toggleGrid = undefined; window.__openNodeSearch = undefined; window.__openDependencyGraph = undefined; window.__openMacroPanel = undefined; window.__openHelpGuide = undefined; window.__openKeyboardShortcuts = undefined; window.__openPresentation = undefined; window.__applyWorkspacePreset = undefined; };
     // All setters below are stable (usePanelState memoizes them), so the effect
     // still runs once; listed to satisfy the React Compiler dependency check.
-  }, [saveTrigger, setFindReplaceOpen, setValidationOpen, setProfilingOpen, setSettingsOpen, setDebugOpen, setGraphMetaOpen, setTimelineOpen, setUndoHistoryOpen, setCheckpointsOpen, setNodeSearchOpen, setDependencyGraphOpen, setMacroOpen, setHelpGuideOpen, setKeyboardShortcutsOpen]);
+  }, [saveTrigger, setFindReplaceOpen, setValidationOpen, setProfilingOpen, setSettingsOpen, setDebugOpen, setGraphMetaOpen, setTimelineOpen, setUndoHistoryOpen, setCheckpointsOpen, setNodeSearchOpen, setDependencyGraphOpen, setMacroOpen, setHelpGuideOpen, setKeyboardShortcutsOpen, setPresentationOpen]);
 
   // Load persisted graph from IndexedDB (async) or seed demo nodes.
   // A share link (#g=…) takes priority: it imports as the active graph.
@@ -275,6 +278,7 @@ export default function App() {
   const closeMacro = useCallback(() => { setMacroOpen(false); restoreTrigger(); }, [restoreTrigger, setMacroOpen]);
   const closeHelpGuide = useCallback(() => { setHelpGuideOpen(false); restoreTrigger(); }, [restoreTrigger, setHelpGuideOpen]);
   const closeKeyboardShortcuts = useCallback(() => { setKeyboardShortcutsOpen(false); restoreTrigger(); }, [restoreTrigger, setKeyboardShortcutsOpen]);
+  const closePresentation = useCallback(() => { setPresentationOpen(false); restoreTrigger(); }, [restoreTrigger, setPresentationOpen]);
   const toggleNodeSearch = useCallback(() => { saveTrigger(); setNodeSearchOpen(v => !v); }, [saveTrigger, setNodeSearchOpen]);
   const toggleFindReplace = useCallback(() => { saveTrigger(); setFindReplaceOpen(v => !v); }, [saveTrigger, setFindReplaceOpen]);
   const toggleValidation = useCallback(() => { saveTrigger(); setValidationOpen(v => !v); }, [saveTrigger, setValidationOpen]);
@@ -440,6 +444,7 @@ export default function App() {
             {macroOpen && <MacroPanel onClose={closeMacro} />}
             {helpGuideOpen && <HelpGuidePanel open={helpGuideOpen} onClose={closeHelpGuide} />}
             {keyboardShortcutsOpen && <KeyboardShortcutsPanel open={keyboardShortcutsOpen} onClose={closeKeyboardShortcuts} />}
+            {presentationOpen && <PresentationPanel open={presentationOpen} onClose={closePresentation} />}
           </Suspense>
           <TemplateLibrary />
           <UndoToast />

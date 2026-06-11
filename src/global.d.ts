@@ -46,5 +46,6 @@ interface Window {
   __openMacroPanel?: () => void;
   __openHelpGuide?: () => void;
   __openKeyboardShortcuts?: () => void;
+  __openPresentation?: () => void;
   __openNodeHelp?: (nodeType: string) => void;
 }
