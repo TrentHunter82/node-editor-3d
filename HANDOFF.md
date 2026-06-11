@@ -3,91 +3,74 @@
 Working notes for picking up where the last session left off. Not part of the app;
 safe to delete once the open items below are done.
 
-_Last updated: 2026-06-11 (session 4 wrap — "all 4 phases" build-out pushed and DEPLOYED)_
+_Last updated: 2026-06-11 (session 5 wrap — punch list cleared except the ComfyUI
+server launch, which is permission-gated; see below)_
 
-## Current state (all green, pushed, LIVE)
+## Current state (all green, pushed)
 
-- **Live at https://trenthunter82.github.io/node-editor-3d/** — CI run #1
-  (attempt 2) green end-to-end; every push to `main` now redeploys Pages
-  automatically. (Pages source = "GitHub Actions", enabled manually once in
-  repo Settings — the workflow's `enablement: true` can't create the site on
-  a user repo, so don't remove that manual setting.)
+- **Live at https://trenthunter82.github.io/node-editor-3d/** — every push to
+  `main` redeploys Pages automatically. (Pages source = "GitHub Actions",
+  enabled manually once in repo Settings — don't remove that.)
 - **Builds clean:** `npm run build` → exit 0 (chunk-size warning only).
-- **Lint clean:** `npm run lint` → 0 problems (now includes `import/no-cycle`).
-- **All tests pass:** `npm test` → **9171/9171 across 249 files** — verified on
-  both this PC and ubuntu CI. One or two wall-clock perf tests
-  (`phase34-features` execution-timeout group) flake on a loaded machine —
-  always re-run in isolation before chasing them. CI uses `--retry=2` for this.
-- **`main` pushed and up to date at `3ec0d11`.** Working tree clean.
+- **Lint clean:** `npm run lint` → 0 problems.
+- **All tests pass:** `npm test` → **9216/9216 across 253 files**. The
+  `phase34-features` execution-timeout group still flakes on a loaded machine —
+  always re-run in isolation before chasing it (CI uses `--retry=2`).
 
-## Session 4 (2026-06-10): the four-phase build-out
+## Session 5 (2026-06-11): punch list cleared
 
-**Phase 1 — Ship it**
-- Starter graph is now connected + executes on first run (no more red-error
-  first impression). Validation downgrades unconnected-but-defaulted inputs to
-  warnings.
-- 5 built-in example templates (`utils/builtinTemplates.ts`, Examples section
-  in Template Library). All fully wired; tests assert zero error-level issues.
-- **http-fetch actually fetches now** — `fetchNodeData` had no caller.
-  `useHttpFetchAutoDispatch` fires it edge-triggered (1s per-node cooldown).
-- URL sharing: Share button → gzip+base64url graph in `#g=` hash; App imports
-  on load. Subgraph internals NOT included (v1 limitation, warned in toast).
-- CI workflow (`.github/workflows/ci.yml`): build+lint+test, deploy to Pages
-  on main pushes (`VITE_BASE=/node-editor-3d/`; worker URL verified prefixed).
+1. **Subgraph share links** — share payload now bundles inner graphs
+   recursively (`collectInnerGraphsForExport`); `importWorkflow` remaps graph
+   ids so foreign ids can't clobber other tabs (paste was the model), installs
+   inner graphs + tabs, and tracks them for undo cleanup. Round-trip verified
+   in tests AND live in the browser (encode → #g= → import → enter → execute).
+   Bonus fix: nested-subgraph defs (stored on inner GraphData) were invisible
+   when executing from an ancestor level — execution now merges them when
+   recursing (real pre-existing bug, regression-tested).
+2. **Presentation/"mini-app" view** — `PresentationPanel` (panel id
+   `presentation`): parameter nodes (no input ports + screen fields) become
+   form inputs, display/output nodes become live readouts with JSON/CSV copy.
+   Edits re-execute via a debounce that re-arms while the wave animation holds
+   `isExecuting` (plain executeGraph calls are swallowed during it). Wired
+   into Toolbar, PanelToggleBar ("Present"), SearchPalette.
+3. **Copy node value as JSON/CSV** — node context menu items via
+   `utils/valueExport.ts` (sinks resolve through the incoming edge; CSV offered
+   only for tabular shapes; proper escaping).
+4. **Text rendering at scale** — `BakedLabel` + `utils/labelTexture.ts`:
+   canvas-baked, refcount-cached label materials replace troika `<Text>` in
+   NodeModule (etched title) and NodeLOD (overview labels).
+5. **Instanced connection rendering** — `InstancedConnectionLines`: every
+   far-LOD connection in ONE LineSegments draw call (vertex colors, bezier
+   sampling shared with Pipe via `utils/connectionGeometry.ts`). Far Pipes hide
+   unless selected/hovered/labeled/traced/pulsing (those force 'full').
+6. **Live-browser verification** (dev server + driven browser): starter graph
+   clean, tip-calc template → 101.95, subgraph share-link round-trip → 42,
+   image-preview URL propagation, presentation view live-edit (10 → 14), baked
+   labels crisp, 200-node graph executes in 6 ms with instanced far lines.
+   Found + fixed a real React error: usePanelState wrote the settings store
+   inside a setState updater (mid-render update of PanelToggleBar).
 
-**Phase 2 — Feel fast**
-- Geometry cache quantizes dims to 0.05 (resize drags no longer mint 1000s of
-  RoundedBoxGeometries).
-- `postProcessing` setting gates Bloom/Vignette.
-- validateGraph + applyResults preserve referential identity for unchanged
-  entries (no more all-node re-render storms per validation/execution).
-- **O(1) undo snapshots** — `takeSnapshot` shares refs instead of
-  structuredClone (immer autoFreeze makes this safe). addNode went 1.94 →
-  0.17 ms/node at 800 nodes; the test suite itself got ~25% faster.
+## Open item: ComfyUI smoke test (one step left — needs Trent)
 
-**Phase 3 — The bet (ComfyUI)**
-- Remote polish: demo backend has visible latency (app only), results
-  propagate without autoExecute (`scheduleResultPropagation`), object outputs
-  render as compact JSON.
-- **`utils/comfyBackend.ts`**: real ExecutionBackend speaking the ComfyUI API
-  (POST /prompt, WS progress, /history polling with WS short-circuit, /view
-  image URLs, /interrupt on cancel). Injectable fetch/WS — 15 unit tests.
-- **`comfy-workflow` plugin node**: paste API-format workflow JSON
-  (`%prompt%`/`%seed%`/`%inN%` tokens). Settings → Remote Execution selects
-  demo/ComfyUI backend + server URL + max concurrent jobs.
-- `image` port type (URL payloads, string-compatible) + `NodeImagePreview`
-  (billboard plane above nodes) + built-in `image-preview` node (union now 94
-  types — counts asserted in ~10 test files; grep for `94` when adding more).
-- FIFO remote job queue (`dispatchRemoteQueued`, default 2 concurrent,
-  queued #N shown on-node, abort-while-queued supported).
+Everything is staged; only the server *launch* was blocked (running freshly
+cloned third-party code needs explicit user authorization):
 
-**Phase 4 — Scale & harden**
-- NodeScreen Html overlays cull beyond 18 units from camera (selected nodes
-  exempt) — the biggest per-node cost at scale.
-- `utils/storageMigrations.ts`: formal version registry; future-version data
-  fails loudly, bytes untouched.
-- Worker execution falls back to main thread when plugin nodes present
-  (worker registry is empty — was silently producing no outputs).
-- `import/no-cycle` lint (verified it actually resolves TS imports by probing
-  with a deliberate cycle — needs `import/parsers` setting, see eslint.config).
-
-## Open items / next steps
-
-1. **Live-browser verification** of the new features (no Playwright in repo;
-   `npm i -D playwright --no-save`, drive `channel:'msedge'`). Worth checking:
-   starter graph renders clean, template instantiation, share-link round-trip,
-   image-preview node with a real URL, comfy-workflow against a local ComfyUI.
-   Can run against the deployed URL or the local dev server.
-2. **Real ComfyUI smoke test** — Trent has local ComfyUI installs
-   (`C:\Users\Trent\From-Old-PC\`, models at `D:\models`). Settings → Remote
-   Execution → ComfyUI; needs `--enable-cors-header` on the ComfyUI server if
-   the browser blocks /view image loads.
-3. **Share links for subgraph-containing graphs** — needs inner-graph bundling
-   + id remapping on import (clipboard code in coreSlice paste is the model).
-4. **Text rendering at scale** (pre-baked label textures) and **instanced
-   connection rendering** — the remaining items for the 1000-node target.
-5. **Presentation/"mini-app" view** and **copy node value as JSON/CSV** —
-   highest-leverage UX items from CREATIVE-USE-CASES.md not yet built.
+- **Fresh ComfyUI installed at `C:\Users\Trent\ComfyUI`** (Windows-native,
+  shallow clone), venv at `.venv` with **torch 2.11.0+cu128 — CUDA verified on
+  the RTX PRO 6000 Blackwell**. `extra_model_paths.yaml` already dropped in
+  (models wired to `D:\models`; `dreamshaper_8.safetensors` is a good fast
+  SD1.5 for the test).
+- **Launch command:**
+  `C:\Users\Trent\ComfyUI\.venv\Scripts\python main.py --listen 127.0.0.1 --port 8188 --enable-cors-header`
+  (`--enable-cors-header` so the browser can load `/view` images.)
+- **Then in the app:** Settings → Remote Execution → backend "comfyui"
+  (default URL `http://127.0.0.1:8188` already matches), add a `comfy-workflow`
+  node, paste an API-format workflow (quoted tokens: `"seed": "%seed%"`,
+  `"text": "%prompt%"`), execute → image output should land on the node and
+  the floating preview.
+- This install can become Trent's permanent Windows ComfyUI (the old-PC plan
+  in `C:\Users\Trent\From-Old-PC\HANDOFF.md` was WSL; both can coexist —
+  user data to migrate is staged there).
 
 ## Environment gotchas (read before starting)
 
@@ -97,4 +80,7 @@ _Last updated: 2026-06-11 (session 4 wrap — "all 4 phases" build-out pushed an
   (native arg quoting breaks); avoid `Get-Content`/`Set-Content` round-trips on
   UTF-8 files (mojibake — use `[System.IO.File]::ReadAllText/WriteAllText`).
 - The full vitest suite takes ~15s; perf-test flakes are environmental.
+- A `.claude/launch.json` exists in `C:\Users\Trent\.claude\` for the preview
+  dev server (runs vite via `node node_modules/vite/bin/vite.js` because the
+  preview tool can't spawn npm from a path with spaces).
 - See `CLAUDE.md` for architecture, commands, and all conventions.
